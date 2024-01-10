@@ -1,4 +1,4 @@
-#!E:\Libs\Docs\SibGU\5 S\Практика\HomeDoctorAdmin\extensions\virt\Scripts\python.exe
+#!E:\Libs\Docs\SibGU\5 S\Практика\HomeDoctorAdmin\kivy_venv\Scripts\python.exe
 
 # $Id: rst2latex.py 9115 2022-07-28 17:06:24Z milde $
 # Author: David Goodger <goodger@python.org>

@@ -1,4 +1,4 @@
-#!E:\Libs\Docs\SibGU\5 S\Практика\HomeDoctorAdmin\extensions\virt\Scripts\python.exe
+#!E:\Libs\Docs\SibGU\5 S\Практика\HomeDoctorAdmin\kivy_venv\Scripts\python.exe
 
 import sys
 import argparse

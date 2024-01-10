@@ -1,4 +1,4 @@
-#!E:\Libs\Docs\SibGU\5 S\Практика\HomeDoctorAdmin\extensions\virt\Scripts\python.exe
+#!E:\Libs\Docs\SibGU\5 S\Практика\HomeDoctorAdmin\kivy_venv\Scripts\python.exe
 # :Copyright: © 2015 Günter Milde.
 # :License: Released under the terms of the `2-Clause BSD license`_, in short:
 #
