@@ -1,0 +1,55 @@
+#:import utils kivy.utils
+
+<Button>
+  font_size: 32
+  background_normal: ''
+  background_color: utils.get_color_from_hex('#40d8b5')
+  color: utils.get_color_from_hex('#304d46')
+
+<MainLayout>
+  canvas.before:
+    Color:
+      rgba: utils.get_color_from_hex('#5c6b56')
+    Rectangle:
+      pos: self.pos
+      size: self.size
+
+  BoxLayout:
+    orientation: 'vertical'
+    size: root.width, root.height
+    padding: 10
+    spacing: 10
+
+    Label:
+      text: "Name"
+      font_size: 30
+      bold: True
+      italic: True
+      outline_color: utils.get_color_from_hex('#74d032')
+      outline_width: 1
+      canvas.before:
+        Color:
+          rgba: utils.get_color_from_hex('#304d46')
+        Rectangle:
+          size: self.size
+          pos: self.pos
+      color:  utils.get_color_from_hex('#d032a9')
+
+    TextInput:
+      multiline: False
+    
+    Label:
+      text: "Midname"
+    TextInput:
+      multiline: False
+
+    Label:
+      text: "Surname" 
+    TextInput:
+      multiline: False
+    
+    Button:
+      text: "Submit" 
+    
+    Button:
+      text: "Clear"

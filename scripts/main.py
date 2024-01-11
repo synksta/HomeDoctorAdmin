@@ -1,22 +1,18 @@
-import kivy
 from kivy.app import App
-from kivy.uix.label import Label
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.button import Button
-from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 from kivy.properties import ObjectProperty
 from kivy.lang import Builder
 
-Builder.load_file('main.kv')  # Now kivy knows what style we need for this app
+# Now kivy knows what style we need for this app
+Builder.load_file('images.kv')
 
 
-class MainGridLayout(Widget):  # Inheriting the GridLayout
+class MainLayout(Widget):  # Inheriting the GridLayout
     # Initialize infinite keywords
     # def __init__(self, **kwargs):
     # Call grid layout constructor
     # Calling __init__ method of inherited class
-    # super MainGridLayout, self).__init__(**kwargs)
+    # super MainLayout, self).__init__(**kwargs)
 
     # # Set columns
     # self.cols = 1
@@ -88,7 +84,7 @@ class MainGridLayout(Widget):  # Inheriting the GridLayout
 
 class HomeDoctorApp(App):  # The design file name must contain the lowercased class name BUT it must not contain a word 'App' (in our case the design file will be named 'homedoctor.kv'). If we would name this class Mango or whatever the design file would be named as 'mango.kv'
     def build(self):
-        return MainGridLayout()
+        return MainLayout()
 
 
 if __name__ == '__main__':
