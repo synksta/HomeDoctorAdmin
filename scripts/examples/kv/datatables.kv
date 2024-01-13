@@ -1,0 +1,30 @@
+ScreenManager:
+    DemoPage:
+    
+    ClientsTable:
+
+
+<DemoPage>:
+    name: 'Demopage'
+    MDRaisedButton:
+        text: 'Next'
+        size_hint: 0.5, 0.06
+        pos_hint: {"center_x": 0.5, "center_y": 0.4}
+        on_release: 
+            root.manager.current = 'Clientstable'
+            
+            
+<ClientsTable>:
+    name: 'Clientstable'
+
+    BoxLayout:
+        orientation: 'vertical'
+        BoxLayout:
+            id: bl
+            
+        MDRaisedButton:
+            text: 'Prev'
+            size_hint: 0.5, 0.06
+            pos_hint: {"center_x": 0.5, "center_y": 0.4}
+            on_release: 
+                root.manager.current = 'Demopage'

@@ -1,0 +1,108 @@
+#:import utils kivy.utils
+Manager:
+    LoginScreen:
+    MenuScreen:
+    SymptomsScreen:
+
+<LoginScreen>:
+    name: 'loginScreen'
+    MDCard:
+        size_hint: None, None
+        size: 300, 300
+        pos_hint: {'center_x': 0.5,'center_y': 0.5}
+        # elevation: 10
+        padding: 25
+        spacing: 25
+        orientation: 'vertical'
+
+        MDLabel:
+            id: welcome_label
+            text: 'Привет!'
+            font_size: 32
+            valign: 'top'
+            halign: 'center'
+            size_hint: 1, None
+            height: self.texture_size[1]
+            # padding_y: 15
+
+        MDTextField:
+            id: user
+            mode: 'round'
+            hint_text: 'username'
+            icon_right: 'account'
+            size_hint_x: None
+            width: 200
+            font_size: 16
+            pos_hint: {'center_x': 0.5}
+
+        MDTextField:
+            id: password
+            mode: 'round'
+            password: True
+            hint_text: 'password'
+            icon_right: 'form-textbox-password'
+            size_hint_x: None
+            width: 200
+            font_size: 16
+            pos_hint: {'center_x': 0.5}
+
+        MDFillRoundFlatButton:
+            # MDRaisedButton:
+            text: 'Вход'
+            pos_hint: {'center_x': 0.5}
+            on_release:
+                root.manager.transition.direction = "left"
+                app.root.change_screen('menuScreen')
+
+<MenuScreen>:
+    name:'menuScreen'
+    MDCard:
+        size: root.width, root.height
+        # size_hint: .9, .9
+        pos_hint: {'center_x': 0.5,'center_y': 0.5}
+        # elevation: 10
+        padding: 25
+        spacing: 25
+        orientation:'vertical'
+        MDRaisedButton: 
+            size_hint: 1, .2
+            text: 'Симптомы'
+            on_release:
+                root.manager.transition.direction = "left"
+                app.root.change_screen('symptomsScreen')
+        MDRaisedButton:
+            size_hint: 1, .2
+            text: 'Ключевые слова'
+        MDRaisedButton:
+            size_hint: 1, .2
+            text: 'Пользователи'
+        MDRaisedButton:
+            size_hint: 1, .1
+            text: 'Выйти'
+            on_release:
+                root.manager.transition.direction = "right"
+                app.root.change_screen('loginScreen')
+
+<SymptomsScreen>:
+    name: 'symptomsScreen'
+
+    BoxLayout:
+        orientation: 'vertical'
+        BoxLayout:
+            size_hint: 1, None
+            padding: 10
+            height:40
+            orientation: 'horizontal'
+            MDRaisedButton:
+                text: 'Prev'
+                size_hint: None, 1
+                width: 40
+                pos_hint: {"x": 0}
+                on_release: 
+                    root.manager.transition.direction = "right"
+                    root.manager.current = 'menuScreen'
+        BoxLayout:
+            padding: 10
+            id: table_place
+            
+       
