@@ -2,7 +2,6 @@ from kivy.app import App
 from kivy.config import Config
 from kivy.lang import Builder
 from kivy.core.window import Window
-from kivy.properties import ObjectProperty
 from kivy.uix.screenmanager import ScreenManager, Screen
 
 
@@ -13,13 +12,11 @@ Window.size = (800, 700)
 # Define our different screens
 
 
-class LoginScreen(Screen):
-    # login = ObjectProperty(None)
-    # password = ObjectProperty(None)
+class FirstScreen(Screen):
     pass
 
 
-class MenuScreen(Screen):
+class SecondScreen(Screen):
     pass
 
 
@@ -29,14 +26,14 @@ class ScreenManager_(ScreenManager):
 
 
 # Now kivy knows what style we need for this app
-kv = Builder.load_file('../kivy/hd.kv')
+kv = Builder.load_file('../kivy/examples/screens_and_popups.kv')
 
 
-class HomeDoctor(App):
+class Multiscreen(App):
 
     def build(self):
         return kv
 
 
 if __name__ == '__main__':
-    HomeDoctor().run()
+    Multiscreen().run()

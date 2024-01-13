@@ -1,0 +1,131 @@
+#:import utils kivy.utils
+
+<Button>
+  # background_normal: ''
+  font_size: 32
+  
+
+  # canvas.before:
+  #   Color:
+  #     rgba: .5, .5, .5, 1
+  #   Line:
+  #     width: 2
+  #     rectangle: self.x, self.y, self.width, self.height
+
+<CalcKey@Button>
+  size_hint: .2, .2
+  background_color:  utils.get_color_from_hex('#899794')
+
+<CalcNumKey@CalcKey>
+  background_color:  utils.get_color_from_hex('#c2d0cd')
+  on_press: app.root.calc_print(self.text)
+
+<MainLayout>
+  BoxLayout:
+    orientation: 'vertical'
+    size: root.width, root.height
+
+    TextInput:
+      id: calc_input
+      text: '10'
+      hailgn: 'right'
+      font_size: 65
+      size_hint: (1, 0.15)
+    
+    GridLayout:
+      cols: 4
+      rows: 5
+      
+      # Row 0
+
+      CalcKey:
+        id: key_p
+        text: '%'
+
+      CalcKey:
+        id: key_c
+        text: 'C'
+        on_press: root.calc_clear()
+
+      CalcKey:
+        id: key_e
+        text: '<--'
+        on_press: root.calc_erase()
+
+      CalcKey:
+        id: key_div
+        text: '/'
+
+      # Row 1
+
+      CalcNumKey:
+        id: key_7
+        text: '7'
+        
+
+      CalcNumKey:
+        id: key_8
+        text: '8'
+
+      CalcNumKey:
+        id: key_9
+        text: '9'
+
+      CalcKey:
+        id: key_mul
+        text: 'x'
+
+      # Row 2
+
+      CalcNumKey:
+        id: key_4
+        text: '4'
+
+      CalcNumKey:
+        id: key_5
+        text: '5'
+
+      CalcNumKey:
+        id: key_6
+        text: '6'
+
+      CalcKey:
+        id: key_min
+        text: '-'
+
+      # Row 3
+
+      CalcNumKey:
+        id: key_1
+        text: '1'
+
+      CalcNumKey:
+        id: key_2
+        text: '2'
+
+      CalcNumKey:
+        id: key_3
+        text: '3'
+
+      CalcKey:
+        id: key_add
+        text: '+'
+        on_press: root.calc_add()
+
+      # Row 4
+
+      CalcNumKey:
+        id: key_change
+        text: '+/-'
+
+      CalcNumKey:
+        id: key_0
+        text: '0'
+
+      CalcNumKey:
+        id: key_dot
+        text: '.'
+
+      CalcKey:
+        id: key_equals
+        text: '='
