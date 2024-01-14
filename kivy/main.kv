@@ -6,6 +6,7 @@ Manager:
 
 <LoginScreen>:
     name: 'loginScreen'
+    on_pre_enter: app.change_title('ДД Админ - Вход')
     MDCard:
         size_hint: None, None
         size: 300, 300
@@ -50,12 +51,12 @@ Manager:
             # MDRaisedButton:
             text: 'Вход'
             pos_hint: {'center_x': 0.5}
-            on_release:
-                root.manager.transition.direction = "left"
+            on_release:       
                 app.root.change_screen('menuScreen')
 
 <MenuScreen>:
     name:'menuScreen'
+    on_pre_enter: app.change_title('ДД Админ - Меню')
     MDCard:
         size: root.width, root.height
         # size_hint: .9, .9
@@ -68,7 +69,6 @@ Manager:
             size_hint: 1, .2
             text: 'Симптомы'
             on_release:
-                root.manager.transition.direction = "left"
                 app.root.change_screen('symptomsScreen')
         MDRaisedButton:
             size_hint: 1, .2
@@ -80,29 +80,62 @@ Manager:
             size_hint: 1, .1
             text: 'Выйти'
             on_release:
-                root.manager.transition.direction = "right"
-                app.root.change_screen('loginScreen')
+                app.root.change_screen_to_prev()
+
+<FilterMenuHeader>
+    spacing: "4dp"
+    padding: "4dp"
+    adaptive_height: True
+
+    MDIconButton:
+        icon: "filter"
+        pos_hint: {"top": 1}
+
+    MDLabel:
+        text: "Фильтр:"
+        adaptive_size: True
+        pos_hint: {"center_y": .5}
 
 <SymptomsScreen>:
     name: 'symptomsScreen'
-
-    BoxLayout:
+    on_pre_enter: app.change_title('ДД Админ - Симптомы')
+    MDBoxLayout:
         orientation: 'vertical'
-        BoxLayout:
-            size_hint: 1, None
+        MDTopAppBar:
+            id: topBar
+            left_action_items:
+                [
+                ['arrow-left', lambda x: app.root.change_screen_to_prev(), 'Назад'],
+                ]
+            right_action_items:
+                [
+                ['plus-circle', lambda x: root.add_symptom(), 'Добавить'],
+                ['help', lambda x: root.help_popup(), 'Помощь'],
+                ]
+            
+        MDBoxLayout:
             padding: 10
-            height:40
+            size_hint_y: 1
+            id: table_place 
+
+        MDBoxLayout:
+            padding: 10
+            spacing: 10
+            size_hint_y: None
             orientation: 'horizontal'
-            MDRaisedButton:
-                text: 'Prev'
-                size_hint: None, 1
-                width: 40
-                pos_hint: {"x": 0}
-                on_release: 
-                    root.manager.transition.direction = "right"
-                    root.manager.current = 'menuScreen'
-        BoxLayout:
-            padding: 10
-            id: table_place
+            id: bottomBar
+            MDTextField:
+                id: searchField
+                on_text: root.search(self.text)
+                hint_text: "Поиск"
+                icon_right: "magnify"
+                mode: "round"
+
+            MDFillRoundFlatIconButton:
+                id: filterButton
+                icon: "filter"
+                text: "Фильтр"
+                # pos_hint: {"center_x": .5, "center_y": .5}
+                on_release: root.menu.open()
             
        
