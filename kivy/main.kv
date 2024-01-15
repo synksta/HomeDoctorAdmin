@@ -3,10 +3,15 @@ Manager:
     LoginScreen:
     MenuScreen:
     SymptomsScreen:
+    SymptomAddEditScreen:
+
+<InnerLayout@MDBoxLayout>:
+    padding: 10
+    spacing: 10
 
 <LoginScreen>:
     name: 'loginScreen'
-    on_pre_enter: app.change_title('ДД Админ - Вход')
+
     MDCard:
         size_hint: None, None
         size: 300, 300
@@ -56,7 +61,6 @@ Manager:
 
 <MenuScreen>:
     name:'menuScreen'
-    on_pre_enter: app.change_title('ДД Админ - Меню')
     MDCard:
         size: root.width, root.height
         # size_hint: .9, .9
@@ -82,6 +86,8 @@ Manager:
             on_release:
                 app.root.change_screen_to_prev()
 
+
+
 <FilterMenuHeader>
     spacing: "4dp"
     padding: "4dp"
@@ -98,7 +104,6 @@ Manager:
 
 <SymptomsScreen>:
     name: 'symptomsScreen'
-    on_pre_enter: app.change_title('ДД Админ - Симптомы')
     MDBoxLayout:
         orientation: 'vertical'
         MDTopAppBar:
@@ -118,9 +123,8 @@ Manager:
             size_hint_y: 1
             id: table_place 
 
-        MDBoxLayout:
-            padding: 10
-            spacing: 10
+        InnerLayout:
+            
             size_hint_y: None
             orientation: 'horizontal'
             id: bottomBar
@@ -138,4 +142,96 @@ Manager:
                 # pos_hint: {"center_x": .5, "center_y": .5}
                 on_release: root.menu.open()
             
-       
+<SymptomAddEditScreen>:
+    name: 'symptomAddEditScreen'
+    MDBoxLayout:
+        pos_hint: {"top": 1}
+        adaptive_height: True
+        orientation: 'vertical'
+        MDTopAppBar:
+            id: topBar
+            title: root.symptom
+            left_action_items:
+                [
+                ['arrow-left', lambda x: app.root.change_screen_to_prev(), 'Назад'],
+                ]
+
+            right_action_items:
+                [
+                ['content-save', lambda x: app.root.change_screen_to_prev(), 'Сохранить и выйти'],
+                ['content-save-plus', lambda x: app.root.change_screen_to_prev(), 'Сохранить и добавить еще'],
+                ]
+
+        InnerLayout:    
+            pos_hint: {"top": 1}
+            adaptive_height: True
+
+            orientation: 'horizontal'
+            MDTextField:
+                size_hint_x: 1
+                hint_text: "Название"
+                max_text_length: 30
+
+            MDTextField:
+                size_hint_x: .2
+                hint_text: "Стр."
+                max_text_length: 3
+
+        InnerLayout:
+            # adaptive_height: True
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: dp(300)
+            MDTextField:
+                size_hint: 1, 1
+                multiline: True
+                hint_text: "Описание"
+                # mode: "round"
+                max_text_length: 300
+        
+        MDBoxLayout:
+            # adaptive_height: True
+            orientation: 'vertical'
+            padding: 10
+            size_hint_y: None
+            height: dp(100)
+
+            MDLabel:
+                text: "Ссылки на симптомы"
+                halign: "left"
+                theme_text_color: "Hint"
+
+            InnerLayout:
+                padding: 0
+                size_hint_y: 1
+
+                MDFillRoundFlatIconButton:
+                    size_hint_y: 1
+                    size_hint_x: 1
+                    id: filterButton
+                    icon: "check-circle-outline"
+                    text: 'Выбрать'
+                    # pos_hint: {"center_x": .5, "center_y": .5}
+                    # on_release: root.menu.open()
+
+                MDFillRoundFlatIconButton:
+                    size_hint_y: 1
+                    size_hint_x: 1
+                    id: filterButton
+                    icon: "cancel"
+                    text: 'Выбрать'
+
+        # Надо будет парсить сюда ключевые слова, собирать их в строку из списка с разделителем ',<SPACE>', обратно парсить через запятую и каждую запись через strip() лишать пробелов и to_lower() всем тоже делать
+        # Еще можно выделять те ключевые слова, что есть в базе зеленым, а новые, которые добавятся после добавления записи выделять желтым
+        InnerLayout:
+            adaptive_height: True
+            MDTextField:
+                size_hint_x: 1
+                hint_text: "Ключевые слова"
+                helper_text: "Вводите через запятую (Можно с пробелами)"
+                helper_text_mode: "on_focus"
+
+        
+            
+
+        

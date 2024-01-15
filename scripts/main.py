@@ -21,11 +21,15 @@ Window.size = (800, 700)
 
 
 class LoginScreen(Screen):
-    pass
+
+    def on_enter(self):
+        app.change_title('Вход')
 
 
 class MenuScreen(Screen):
-    pass
+
+    def on_enter(self):
+        app.change_title('Меню')
 
 
 class FilterMenuHeader(MDBoxLayout):
@@ -43,6 +47,7 @@ class SymptomsScreen(Screen):
     ]
 
     def on_kv_post(self, base_widget):
+
         self.symptomsTable = None
         filter_menu_items = [
             {
@@ -86,11 +91,6 @@ class SymptomsScreen(Screen):
             res = list(
                 filter(lambda x: text in x[self.filter], self.table_data))
             self.symptomsTable.row_data = res
-            print(len(res))
-            # print(list(filter(lambda x: x[1].find('text'), self.table_data)))
-            # for i in self.table_data:
-            #     if text in i[self.filter].lower():
-            #         print(i)
         else:
             self.symptomsTable.row_data = self.table_data
 
@@ -104,6 +104,11 @@ class SymptomsScreen(Screen):
         print("HELP")
 
     def add_symptom(self):
+        # print(self.manager.screens)
+        self.manager.change_screen('symptomAddEditScreen')
+        self.manager.current_screen.symptom = 'watafaks'
+        app.change_title('Добавление симптома')
+        print(self.manager.current_screen.symptom)
         print("ADD")
 
     def delete_symptom(self):
@@ -165,11 +170,16 @@ class SymptomsScreen(Screen):
         #         (str(last_num_row + 1), "1", "2", "3", '4'))
 
     def on_enter(self):
-        print(self.ids)
+        app.change_title('Симптомы')
         Clock.schedule_once(self.change_screen)
 
     def change_screen(self, dt):
         self.load_table()
+
+
+class SymptomAddEditScreen(Screen):
+    symptom = ObjectProperty('')
+    title = ObjectProperty('')
 
 
 class Manager(ScreenManager):
@@ -185,17 +195,18 @@ class Manager(ScreenManager):
 
 
 class HomeDoctor(MDApp):
+    appname = 'ДД Админ'
 
     def change_title(self, new):
-        self.title = new
+        self.title = f'{self.appname} - {new}'
 
     def build(self):
         self.theme_cls.theme_style = 'Dark'
         self.theme_cls.primary_palette = 'Orange'
         self.theme_cls.accent_palette = 'DeepPurple'
-        self.title = 'ДД Админ - Вход'
         return Builder.load_file('../kivy/main.kv')
 
 
+app = HomeDoctor()
 if __name__ == '__main__':
-    HomeDoctor().run()
+    app.run()
