@@ -121,8 +121,8 @@ Manager:
         pos_hint: {"center_y": .5}
 
 <YesNoMenuHeader> 
-    spacing: '10dp'
-    padding: "10dp", "10dp", "0dp", "20dp"
+    # spacing: '10dp'
+    padding: "10dp", "10dp", "10dp", "14dp"
     adaptive_height: True
     MDTextField:
         id: searchField
@@ -132,7 +132,7 @@ Manager:
         width: '184dp'
     MDIconButton:
         icon: "magnify"
-        pos_hint: {'x': 1, "top": 1}
+        pos_hint: {'x': .9, "top": 1}
 
 <SymptomsScreen>:
     name: 'symptomsScreen'
@@ -156,8 +156,7 @@ Manager:
             id: table_place 
 
         InnerLayout:
-            
-            size_hint_y: None
+            adaptive_height: True
             orientation: 'horizontal'
             id: bottomBar
             MDTextField:
@@ -246,10 +245,8 @@ Manager:
                     icon: "check-circle-outline"
                     text: root.symptom_yes
                     on_release: 
-                        root.yesMenu.open(),
-                        root.set_focus_yes()
-                    # pos_hint: {"center_x": .5, "center_y": .5}
-                    # on_release: root.menu.open()
+                        root.prepare_menu_yes(),
+                        root.yesMenu.open()
 
                 MDFillRoundFlatIconButton:
                     size_hint_y: 1
@@ -258,18 +255,20 @@ Manager:
                     icon: "cancel"
                     text: root.symptom_no
                     on_release: 
-                        root.noMenu.open(),
-                        root.set_focus_no()
+                        root.prepare_menu_no(),
+                        root.noMenu.open()
 
         # Надо будет парсить сюда ключевые слова, собирать их в строку из списка с разделителем ',<SPACE>', обратно парсить через запятую и каждую запись через strip() лишать пробелов и to_lower() всем тоже делать
         # Еще можно выделять те ключевые слова, что есть в базе зеленым, а новые, которые добавятся после добавления записи выделять желтым
         InnerLayout:
             adaptive_height: True
             MDTextField:
+                id: keywordsInput
                 size_hint_x: 1
                 hint_text: "Ключевые слова"
                 helper_text: "Вводите через запятую (Можно с пробелами)"
                 helper_text_mode: "on_focus"
+                on_text: root.keywords_enter(self.text)
 
 <KeywordsScreen>:
     name: 'keywordsScreen'
@@ -293,7 +292,7 @@ Manager:
             id: table_place 
 
         InnerLayout:
-            size_hint_y: None
+            adaptive_height: True
             orientation: 'horizontal'
             id: bottomBar
             MDTextField:
@@ -302,7 +301,21 @@ Manager:
                 hint_text: "Поиск"
                 icon_right: "magnify"
                 mode: "round"        
-            
+
+<AddEditUserDialog_Content>
+    orientation: "vertical"
+    spacing: "12dp"
+    size_hint_y: None
+    height: "120dp"
+
+    MDTextField:
+        id: loginField
+        hint_text: "Логин"
+
+    MDTextField:
+        id: passwordField
+        hint_text: "Пароль"
+
 <UsersScreen>:
     name: 'usersScreen'
     MDBoxLayout:
@@ -325,7 +338,8 @@ Manager:
             id: table_place 
 
         InnerLayout:
-            size_hint_y: None
+            # size_hint_y: None
+            adaptive_height: True
             orientation: 'horizontal'
             id: bottomBar
             MDTextField:

@@ -1,4 +1,5 @@
 import time
+import re
 from kivy.lang import Builder
 from kivy.core.window import Window
 from kivymd.app import MDApp
@@ -7,11 +8,14 @@ from kivymd.uix.screen import Screen
 from kivymd.uix.datatables import MDDataTable
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.boxlayout import MDBoxLayout
-from kivymd.uix.textfield import MDTextField
+from kivymd.uix.button import MDFlatButton
+from kivymd.uix.button import MDRaisedButton
+from kivymd.uix.dialog import MDDialog
 from kivy.metrics import dp
 from kivy.lang.builder import Builder
 from kivy.clock import Clock
 from kivy.properties import ObjectProperty
+import dbcontrol
 
 
 # Set the app size
@@ -22,13 +26,14 @@ Window.size = (800, 700)
 
 
 class LoginScreen(Screen):
+    def on_kv_post(self, base_widget):
+        self.manager.screen_history.append(self.name)
 
     def on_enter(self):
         app.change_title('Вход')
 
 
 class MenuScreen(Screen):
-
     def on_enter(self):
         app.change_title('Меню')
 
@@ -197,10 +202,31 @@ class SymptomsScreen(Screen):
 
 
 class YesNoMenuHeader(MDBoxLayout):
+
+    data = None
+
     def search(self, text):
-        # self.menu.ids.content_header.children[0].ids.searchField.text = 'Поиск'
-        # self.menu.ids.content_header.children[0].ids.searchLabel.text = text
-        print(text)
+        if (self.data == None):
+            self.data = self.parent.parent.items.copy()
+
+        if (len(text) > 0):
+            res = list(
+                filter(lambda x: text.lower() in x.get('text').lower(), self.data))
+            self.parent.parent.items = res
+        else:
+            self.parent.parent.items = self.data
+        self.parent.parent.set_menu_properties()
+        # if (len(text) > 0):
+        #     data = self.parent.parent.items
+        #     print(text)
+        #     res = list(
+        #         filter(lambda x: text.lower() in x.get('text').lower(), data))
+        #     self.parent.parent.items = res
+        #     print(res)
+        # self.symptomsTable.row_data = res
+        # else:
+        #     self.symptomsTable.row_data = self.table_data
+        # print(text)
 
 
 class SymptomAddEditScreen(Screen):
@@ -210,11 +236,6 @@ class SymptomAddEditScreen(Screen):
     symptom_yes = ObjectProperty('')
     symptom_no = ObjectProperty('')
     symptom_page = ObjectProperty('')
-
-    def on_enter(self):
-        self.yesMenu.open()
-        time.sleep(.2)
-        self.noMenu.open()
 
     def new_symptom(self):
         self.symptom_id = ''
@@ -247,7 +268,7 @@ class SymptomAddEditScreen(Screen):
         pass
 
     def on_enter(self):
-        yes_menu_items = [
+        self.yes_menu_items = [
             {
                 "text": 'ID',
                 "on_release": lambda x=['0', 'ID']: self.yesMenu_callback(x),
@@ -272,7 +293,7 @@ class SymptomAddEditScreen(Screen):
 
         ]
 
-        no_menu_items = [
+        self.no_menu_items = [
             {
                 "text": 'Ключевые слова',
                 "on_release": lambda x=['5', 'Ключевые слова']: self.noMenu_callback(x),
@@ -294,35 +315,46 @@ class SymptomAddEditScreen(Screen):
 
         self.yesMenu = MDDropdownMenu(
             caller=self.ids.yesButton,
-            items=yes_menu_items,
+            header_cls=MDBoxLayout()
         )
-
-        if len(yes_menu_items) > 4:
-            self.yesMenu.header_cls = YesNoMenuHeader()
 
         self.noMenu = MDDropdownMenu(
             caller=self.ids.noButton,
-            items=no_menu_items,
+            header_cls=MDBoxLayout()
         )
 
-        if len(no_menu_items) > 4:
-            self.noMenu.header_cls = YesNoMenuHeader()
+    def menu_set_header(self, menu):
+        if len(menu.items) > 4:
+            if menu.header_cls.__class__.__name__ != 'YesNoMenuHeader':
+                menu.header_cls = YesNoMenuHeader()
+        else:
+            menu.header_cls = MDBoxLayout()
+
+    def prepare_menu_yes(self):
+        self.yesMenu.items = self.yes_menu_items.copy()
+        self.yesMenu.set_menu_properties()
+        self.menu_set_header(self.yesMenu)
+        self.set_focus_yes()
+
+    def prepare_menu_no(self):
+        self.noMenu.items = self.no_menu_items.copy()
+        self.noMenu.set_menu_properties()
+        self.menu_set_header(self.noMenu)
+        self.set_focus_no()
 
     def set_focus_yes(self):
-        if (self.yesMenu.header_cls != None):
-            if len(self.yesMenu.ids.content_header.children) > 0:
-                print(self.yesMenu.ids.content_header.children[0].ids)
-                self.yesMenu.ids.content_header.children[0].ids.searchField.focus = True
-                self.yesMenu.ids.content_header.children[0].ids.searchField.text = ''
+        if (self.yesMenu.header_cls.__class__.__name__ == 'YesNoMenuHeader'):
+            if len(self.yesMenu.header_cls.ids) > 0:
+                self.yesMenu.header_cls.ids.searchField.focus = True
+                self.yesMenu.header_cls.ids.searchField.text = ''
             else:
                 self.yesMenu.dismiss()
 
     def set_focus_no(self):
-        if (self.noMenu.header_cls != None):
-            if len(self.noMenu.ids.content_header.children) > 0:
-                print(self.noMenu.ids.content_header.children[0].ids)
-                self.noMenu.ids.content_header.children[0].ids.searchField.focus = True
-                self.noMenu.ids.content_header.children[0].ids.searchField.text = ''
+        if (self.noMenu.header_cls.__class__.__name__ == 'YesNoMenuHeader'):
+            if len(self.noMenu.header_cls.ids) > 0:
+                self.noMenu.header_cls.ids.searchField.focus = True
+                self.noMenu.header_cls.ids.searchField.text = ''
             else:
                 self.noMenu.dismiss()
 
@@ -333,6 +365,27 @@ class SymptomAddEditScreen(Screen):
     def noMenu_callback(self, item):
         self.noMenu.dismiss()
         self.ids.noButton.text = item[1]
+
+    # KEYWORDS
+
+    keywords_list = [
+        'внимание',
+        'ребята',
+        'домашнее',
+        'задание',
+    ]
+
+    def keywords_enter(self, text):
+        def find_common(list1, list2): return sum(
+            map(lambda x: x in list1 and x in list2, list1))
+
+        if (len(text) > 0):
+            parsed_list = re.split('\,* \\s*', re.sub('\,*$', '', text))
+            common = find_common(parsed_list, self.keywords_list)
+            self.ids.keywordsInput.helper_text = f'В базе есть {
+                common} введенных слов, {len(parsed_list) - common} будет добавлено'
+        else:
+            self.ids.keywordsInput.helper_text = "Вводите через запятую (Можно с пробелами)"
 
 
 class KeywordsScreen(Screen):
@@ -420,7 +473,12 @@ class KeywordsScreen(Screen):
         self.load_table()
 
 
+class AddEditUserDialog_Content(MDBoxLayout):
+    pass
+
+
 class UsersScreen(Screen):
+    dialog = None
 
     table_data = [
         ('user0', "qwerty"),
@@ -440,17 +498,16 @@ class UsersScreen(Screen):
         else:
             self.usersTable.row_data = self.table_data
 
+    def on_row_press(self, instance_table, instance_cell_row):
+        row = int(instance_cell_row.index/len(instance_table.column_data))
+        # uid = int(instance_table.row_data[row][0])
+        self.edit_user(row)
+
     def help_popup(self):
         print("HELP")
 
-    def add_user(self):
-        print("ADD")
-
     def delete_user(self):
         print("DELETE")
-
-    def edit_user(self):
-        print("EDIT")
 
     def on_check(self, instance_table, current_row):
         checks = instance_table.get_row_checks()
@@ -494,7 +551,64 @@ class UsersScreen(Screen):
                 row_data=self.table_data
             )
             self.usersTable.bind(on_check_press=self.on_check)
+            self.usersTable.bind(on_row_press=self.on_row_press)
             self.ids.table_place.add_widget(self.usersTable)
+
+    def add_user(self):
+        if not self.dialog:
+            self.dialog = MDDialog(
+                title='Добавление пользователя',
+                type="custom",
+                content_cls=AddEditUserDialog_Content(),
+                buttons=[
+                    MDFlatButton(
+                        text="ОТМЕНИТЬ",
+                        on_release=self.dialog_dismiss
+                    ),
+                    MDRaisedButton(
+                        text="ДОБАВИТЬ",
+                        on_release=self.dialog_add_user
+                    )
+                ]
+            )
+        self.dialog.open()
+
+    def dialog_add_user(self, obj):
+        print(self.dialog.content_cls.ids.loginField.text)
+        print(self.dialog.content_cls.ids.passwordField.text)
+        self.dialog.dismiss()
+        self.dialog = None
+
+    def edit_user(self, uid):
+        if not self.dialog:
+            self.dialog = MDDialog(
+                title='Изменение пользователя',
+                type="custom",
+                content_cls=AddEditUserDialog_Content(),
+                buttons=[
+                    MDFlatButton(
+                        text="ОТМЕНИТЬ",
+                        on_release=self.dialog_dismiss
+                    ),
+                    MDRaisedButton(
+                        text="CОХРАНИТЬ",
+                        on_release=self.dialog_edit_user
+                    )
+                ]
+            )
+        self.dialog.content_cls.ids.loginField.text = self.table_data[uid][0]
+        self.dialog.content_cls.ids.passwordField.text = self.table_data[uid][1]
+        self.dialog.open()
+
+    def dialog_edit_user(self, obj):
+        print(self.dialog.content_cls.ids.loginField.text)
+        print(self.dialog.content_cls.ids.passwordField.text)
+        self.dialog.dismiss()
+        self.dialog = None
+
+    def dialog_dismiss(self, obj):
+        self.dialog.dismiss()
+        self.dialog = None
 
     def on_enter(self):
         app.change_title('Пользователи')
@@ -506,17 +620,22 @@ class UsersScreen(Screen):
 
 class Manager(ScreenManager):
 
+    screen_history = []
+
     def change_screen(self, new):
-        if (self.screen_names.index(self.current) < self.screen_names.index(new)):
-            self.transition.direction = 'left'
-        else:
-            self.transition.direction = 'right'
-        self.prev = self.current
+        # if (self.screen_names.index(self.current) < self.screen_names.index(new)):
+        self.transition.direction = 'left'
+        self.screen_history.append(new)
+        # else:
+        #     self.transition.direction = 'right'
+        # self.prev = self.current
         self.current = new
 
     def change_screen_to_prev(self):
-        self.transition.direction = 'right'
-        self.current = self.previous()
+        if len(self.screen_history) > 0:
+            self.transition.direction = 'right'
+            self.screen_history.pop(-1)
+            self.current = self.screen_history[-1]
 
 
 class HomeDoctor(MDApp):
