@@ -173,6 +173,11 @@ Manager:
                 # pos_hint: {"center_x": .5, "center_y": .5}
                 on_release: root.menu.open()
             
+
+<IconListItem>
+    IconLeftWidget:
+        icon: root.icon
+
 <SymptomAddEditScreen>:
     name: 'symptomAddEditScreen'
     MDBoxLayout:
@@ -202,12 +207,14 @@ Manager:
                 size_hint_x: 1
                 hint_text: "Название"
                 text: root.symptom_name
+                on_text: root.symptom_name = self.text
                 max_text_length: 30
 
             MDTextField:
                 size_hint_x: .2
                 hint_text: "Стр."
                 text: root.symptom_page
+                on_text: root.symptom_page = self.text
                 max_text_length: 3
 
         InnerLayout:
@@ -219,7 +226,8 @@ Manager:
                 size_hint: 1, 1
                 multiline: True
                 hint_text: "Описание"
-                # mode: "round"
+                text: root.symptom_description
+                on_text: root.symptom_description = self.text
                 max_text_length: 300
         
         MDBoxLayout:
@@ -243,7 +251,7 @@ Manager:
                     size_hint_x: 1
                     id: yesButton
                     icon: "check-circle-outline"
-                    text: root.symptom_yes
+                    text: root.symptom_yes_name
                     on_release: 
                         root.prepare_menu_yes(),
                         root.yesMenu.open()
@@ -253,7 +261,7 @@ Manager:
                     size_hint_x: 1
                     id: noButton
                     icon: "cancel"
-                    text: root.symptom_no
+                    text: root.symptom_no_name
                     on_release: 
                         root.prepare_menu_no(),
                         root.noMenu.open()
@@ -266,6 +274,7 @@ Manager:
                 id: keywordsInput
                 size_hint_x: 1
                 hint_text: "Ключевые слова"
+                text: root.symptom_keywords_string
                 helper_text: "Вводите через запятую (Можно с пробелами)"
                 helper_text_mode: "on_focus"
                 on_text: root.keywords_enter(self.text)
