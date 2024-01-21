@@ -26,7 +26,7 @@ class Keywords(Base):
         res = []
 
         if (self.id):
-            res.append(self.id)
+            res.append(str(self.id))
         else:
             res.append('-')
 
@@ -34,6 +34,8 @@ class Keywords(Base):
             res.append(self.word)
         else:
             res.append('-')
+
+        return tuple(res)
 
 
 class RefKeywords(Base):
@@ -48,10 +50,10 @@ class Symptoms(Base):
     name = Column(String, nullable=False)
     description = Column(String)
     page = Column(Integer)
-    yes = Column(Integer, ForeignKey('symptoms.id'))
+    yes = Column(Integer, ForeignKey('symptoms.id'), nullable=True)
     yes_obj = relationship('Symptoms', remote_side=[
                            id], primaryjoin='Symptoms.id==Symptoms.yes')
-    no = Column(Integer, ForeignKey('symptoms.id'))
+    no = Column(Integer, ForeignKey('symptoms.id'), nullable=True)
     no_obj = relationship('Symptoms', remote_side=[
                           id], primaryjoin='Symptoms.id==Symptoms.no')
 
@@ -127,6 +129,10 @@ def read_keywords():
     return session.query(Keywords).all()
 
 
+def get_keyword(id):
+    return session.query(Keywords).get(id)
+
+
 def get_keyword_by_word(word):
     all_keywords = read_keywords()
     for keyword in all_keywords:
@@ -155,6 +161,10 @@ def get_symptom_by_name(name):
 
 def read_users():
     return session.query(Users).all()
+
+
+def get_user(username):
+    return session.query(Users).filter_by(name=username).first()
 
 
 def show_keywords():
@@ -208,7 +218,7 @@ def insert_ref_keyword(symptom_id, keyword_id):
     session.commit()
 
 
-def insert_symptom(name, description, page, yes, no):
+def insert_symptom(name, description, page, yes=None, no=None):
     new_symptom = Symptoms(
         name=name, description=description, page=page, yes=yes, no=no)
     session.add(new_symptom)
@@ -243,7 +253,7 @@ def update_ref_keyword(symptom_id, keyword_id, new_symptom_id, new_keyword_id):
     return False
 
 
-def update_symptom(symptom_id, new_name, new_description, new_page, new_yes, new_no):
+def update_symptom(symptom_id, new_name, new_description, new_page, new_yes=None, new_no=None):
     symptom = session.query(Symptoms).get(symptom_id)
     if symptom:
         symptom.name = new_name
@@ -266,8 +276,11 @@ def update_user_password(username, new_password):
 
 
 def delete_keyword(keyword_id):
-    keyword = session.query(Keywords).filter_by(id=keyword_id).first()
+    keyword = session.query(Keywords).get(keyword_id)
     if keyword:
+        for r in read_ref_keywords():
+            if r.keyword == keyword.id:
+                delete_ref_keyword(r.symptom, r.keyword)
         session.delete(keyword)
         session.commit()
         return True
@@ -285,7 +298,7 @@ def delete_ref_keyword(symptom_id, keyword_id):
 
 
 def delete_symptom(symptom_id):
-    symptom = session.query(Symptoms).filter_by(id=symptom_id).first()
+    symptom = session.query(Symptoms).get(symptom_id)
     if symptom:
         for s in read_symptoms():
             if s.yes == symptom.id:

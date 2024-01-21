@@ -1,4 +1,5 @@
 #:import utils kivy.utils
+
 Manager:
     LoginScreen:
     MenuScreen:
@@ -10,6 +11,25 @@ Manager:
 <InnerLayout@MDBoxLayout>:
     padding: 10
     spacing: 10
+
+<CustomSnackbar>
+
+    MDIconButton:
+        # height: self.texture_size[1]
+        icon: root.icon
+        opposite_colors: True
+
+    MDLabel:
+        id: text_bar
+        size_hint_y: None
+        height: self.texture_size[1]
+        text: root.text
+        font_size: root.font_size
+        theme_text_color: 'Custom'
+        text_color: 'ffffff'
+        shorten: True
+        shorten_from: 'right'
+        pos_hint: {'center_y': .5}
 
 <LoginScreen>:
     name: 'loginScreen'
@@ -34,7 +54,7 @@ Manager:
             # padding_y: 15
 
         MDTextField:
-            id: user
+            id: nameField
             mode: 'round'
             hint_text: 'username'
             icon_right: 'account'
@@ -44,7 +64,7 @@ Manager:
             pos_hint: {'center_x': 0.5}
 
         MDTextField:
-            id: password
+            id: passwordField
             mode: 'round'
             password: True
             hint_text: 'password'
@@ -58,8 +78,8 @@ Manager:
             # MDRaisedButton:
             text: 'Вход'
             pos_hint: {'center_x': 0.5}
-            on_release:       
-                app.root.change_screen('menuScreen')
+            on_release: root.login()
+            # app.root.change_screen('menuScreen')
 
 
 
@@ -147,7 +167,7 @@ Manager:
             right_action_items:
                 [
                 ['plus-circle', lambda x: root.add_symptom(), 'Добавить'],
-                ['help', lambda x: root.help_popup(), 'Помощь'],
+                ['help', lambda x: root.dialog_help(), 'Помощь'],
                 ]
             
         MDBoxLayout:
@@ -186,7 +206,7 @@ Manager:
         orientation: 'vertical'
         MDTopAppBar:
             id: topBar
-            title: root.symptom_name
+            # title: root.symptom_name
             left_action_items:
                 [
                 ['arrow-left', lambda x: app.root.change_screen_to_prev(), 'Назад'],
@@ -208,14 +228,14 @@ Manager:
                 hint_text: "Название"
                 text: root.symptom_name
                 on_text: root.symptom_name = self.text
-                max_text_length: 30
+                # max_text_length: 30
 
             MDTextField:
                 size_hint_x: .2
                 hint_text: "Стр."
                 text: root.symptom_page
                 on_text: root.symptom_page = self.text
-                max_text_length: 3
+                # max_text_length: 3
 
         InnerLayout:
             # adaptive_height: True
@@ -228,7 +248,7 @@ Manager:
                 hint_text: "Описание"
                 text: root.symptom_description
                 on_text: root.symptom_description = self.text
-                max_text_length: 300
+                # max_text_length: 300
         
         MDBoxLayout:
             # adaptive_height: True
@@ -279,6 +299,17 @@ Manager:
                 helper_text_mode: "on_focus"
                 on_text: root.keywords_enter(self.text)
 
+<AddEditKeywordDialog_Content>
+    orientation: "vertical"
+    spacing: "12dp"
+    size_hint_y: None
+    adaptive_height: True
+    # height: "50dp"
+
+    MDTextField:
+        id: wordField
+        hint_text: "Слово"
+
 <KeywordsScreen>:
     name: 'keywordsScreen'
     MDBoxLayout:
@@ -291,8 +322,8 @@ Manager:
                 ]
             right_action_items:
                 [
-                ['plus-circle', lambda x: root.add_user(), 'Добавить'],
-                ['help', lambda x: root.help_popup(), 'Помощь'],
+                ['plus-circle', lambda x: root.dialog_add_keyword(), 'Добавить'],
+                ['help', lambda x: root.dialog_help(), 'Помощь'],
                 ]
             
         MDBoxLayout:
@@ -313,9 +344,9 @@ Manager:
 
 <AddEditUserDialog_Content>
     orientation: "vertical"
-    spacing: "12dp"
+    spacing: "2dp"
     size_hint_y: None
-    height: "120dp"
+    height: '110dp'
 
     MDTextField:
         id: loginField
@@ -337,8 +368,8 @@ Manager:
                 ]
             right_action_items:
                 [
-                ['plus-circle', lambda x: root.add_user(), 'Добавить'],
-                ['help', lambda x: root.help_popup(), 'Помощь'],
+                ['plus-circle', lambda x: root.dialog_add_user(), 'Добавить'],
+                ['help', lambda x: root.dialog_help(), 'Помощь'],
                 ]
             
         MDBoxLayout:

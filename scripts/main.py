@@ -9,15 +9,19 @@ from kivymd.uix.datatables import MDDataTable
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.button import MDFlatButton
+from kivymd.uix.button import MDRectangleFlatButton
 from kivymd.uix.button import MDRaisedButton
 from kivymd.uix.list import OneLineIconListItem
 from kivymd.uix.dialog import MDDialog
+from kivymd.uix.snackbar import Snackbar
+from kivymd.uix.snackbar import MDSnackbar
 from kivy.metrics import dp
 from kivy.metrics import sp
 from kivy.lang.builder import Builder
 from kivy.clock import Clock
 from kivy.properties import ObjectProperty
 from kivy.properties import StringProperty
+from kivy.properties import NumericProperty
 import dbcontrol
 
 
@@ -27,6 +31,11 @@ Window.size = (800, 700)
 
 # Define our different screens
 
+class CustomSnackbar(MDSnackbar):
+    text = StringProperty(None)
+    icon = StringProperty(None)
+    font_size = NumericProperty("15sp")
+
 
 class LoginScreen(Screen):
     def on_kv_post(self, base_widget):
@@ -34,6 +43,41 @@ class LoginScreen(Screen):
 
     def on_enter(self):
         app.change_title('Вход')
+
+    def login(self):
+        name = self.ids.nameField.text.strip()
+        password = self.ids.passwordField.text.strip()
+
+        if len(name) > 0 and len(password) > 0:
+
+            dbcontrol.open_session()
+            current_user = None
+            for user in dbcontrol.read_users():
+                if name == user.name:
+                    current_user = user
+                    break
+            if current_user:
+                if password == current_user.password:
+                    self.manager.change_screen('menuScreen')
+                else:
+                    CustomSnackbar(
+                        text="Пароль не подходит!",
+                        icon="alert-box",
+                        snackbar_x="10dp",
+                        snackbar_y="10dp",
+                    ).open()
+            else:
+                CustomSnackbar(
+                    text="Такого пользователя нет!",
+                    icon="alert-box",
+                    snackbar_x="10dp",
+                    snackbar_y="10dp",
+                ).open()
+        else:
+            if len(name) == 0:
+                self.ids.nameField.hint_text_color_normal = 'red'
+            if len(password) == 0:
+                self.ids.passwordField.hint_text_color_normal = 'red'
 
 
 class MenuScreen(Screen):
@@ -43,16 +87,6 @@ class MenuScreen(Screen):
 
 class FilterMenuHeader(MDBoxLayout):
     '''An instance of the class that will be added to the menu header.'''
-
-
-symptoms_data = [
-    ('0', "Кашель", "Антикашель", "ьлешаК", "1"),
-    ('1', "Антикашель", "Антикашель", "ьлешаК", "2"),
-    ('2', "ьлешаК", "Антикашель", "ьлешаК", "1"),
-    ('3', "Кашель", "Антикашель", "ьлешаК", "1"),
-    ('4', "Антикашель", "Антикашель", "ьлешаК", "2"),
-    ('5', "ьлешаК", "Антикашель", "ьлешаК", "1"),
-]
 
 
 class SymptomsScreen(Screen):
@@ -82,10 +116,6 @@ class SymptomsScreen(Screen):
                 "text": 'Страница',
                 "on_release": lambda x=['4', 'Страница']: self.menu_callback(x),
             },
-            {
-                "text": 'Ключевые слова',
-                "on_release": lambda x=['5', 'Ключевые слова']: self.menu_callback(x),
-            },
         ]
 
         self.filter = 1
@@ -101,19 +131,38 @@ class SymptomsScreen(Screen):
         if (len(text) > 0):
             print(text)
             res = list(
-                filter(lambda x: text.lower() in x[self.filter].lower(), self.symptomsTable.row_data))
-            self.symptomsTable.row_data = res
+                filter(lambda x: text.lower() in str(x[self.filter]).lower(), self.symptomsTable.row_data))
+            self.symptomsTable.row_data = sorted(
+                res, key=lambda l: l[self.filter])
         else:
-            self.symptomsTable.row_data = self.new_row_data
+            self.symptomsTable.row_data = sorted(
+                self.new_row_data, key=lambda l: l[self.filter])
+        # uncheck_all_rows(self.symptomsTable)
 
     def menu_callback(self, item):
         self.menu.dismiss()
         self.filter = int(item[0])
         self.ids.filterButton.text = item[1]
+        self.symptomsTable.row_data = sorted(
+            self.new_row_data, key=lambda l: l[self.filter])
         print(self.filter)
 
-    def help_popup(self):
-        print("HELP")
+    def dialog_help(self):
+        if self.dialog:
+            self.dialog = None
+        if not self.dialog:
+            self.dialog = MDDialog(
+                title='Помощь',
+                text='Для изменения или удаления симптома нажмите на строку с нужным симптомом.\n\nДля фильтрации слов воспользуйтесь строкой поиска внизу экрана. Вы также можете выбрать фильтр кнопкой справа.',
+                type="custom",
+                buttons=[
+                    MDRaisedButton(
+                        text="ОК",
+                        on_release=self.dialog_dismiss
+                    ),
+                ]
+            )
+            self.dialog.open()
 
     def add_symptom(self):
         # print(self.manager.screens)
@@ -128,84 +177,123 @@ class SymptomsScreen(Screen):
         app.change_title('Редактирование симптома')
         self.manager.current_screen.load_symptom(id)
         print("EDIT")
-
-    def dialog_delete_symptom(self, obj):
-        dbcontrol.open_session()
-        for row in self.checks:
-            dbcontrol.delete_symptom(int(row[0]))
-        dbcontrol.close_session()
-
-        self.load_table()
-
         self.dialog.dismiss()
         self.dialog = None
-
-        self.checks = []
 
     def dialog_dismiss(self, obj):
         self.dialog.dismiss()
         self.dialog = None
 
-    def delete_symptom_dialog(self):
+    def delete_symptom(self, id):
+        dbcontrol.open_session()
+        dbcontrol.delete_symptom(id)
+        dbcontrol.close_session()
+        self.load_table()
+        self.dialog.dismiss()
+        self.dialog = None
+
+    def dialog_delete_symptom(self, id):
+        if self.dialog:
+            self.dialog.dismiss()
+            self.dialog = None
         if not self.dialog:
+            if len(self.new_row_data) > 3:
+                self.dialog = MDDialog(
+                    title='Удаление',
+                    text=f'Вы правда хотите удалить этот симптом?',
+                    type="custom",
+                    buttons=[
+                        MDRaisedButton(
+                            text="ОТМЕНА",
+                            on_release=self.dialog_dismiss
+                        ),
+                        MDFlatButton(
+                            text="УДАЛИТЬ",
+                            on_release=lambda x: self.delete_symptom(id)
+                        )
+                    ]
+                )
+            else:
+                self.dialog = MDDialog(
+                    title='Воу воу, полегче',
+                    text=f'Если в базе не останется как минимум три симптома, нужно будет вносить изменения через админку постгрес, мы этого не хотим.\nПросто отредактируйте симптомы.',
+                    type="custom",
+                    buttons=[
+                        MDRaisedButton(
+                            text="ОК",
+                            on_release=self.dialog_dismiss
+                        ),
+                    ]
+                )
+            self.dialog.open()
+        print("DELETE")
+
+    # def on_check(self, instance_table, current_row):
+    #     self.checks = instance_table.get_row_checks()
+    #     print(self.checks)
+
+    #     # If one row is selected, then we can edit or delete it
+    #     if len(self.checks) == 1:
+    #         if len(self.ids.topBar.right_action_items) < 3:
+    #             self.ids.topBar.right_action_items.insert(
+    #                 0,
+    #                 ['delete', lambda x: self.dialog_delete_symptom(), 'Удалить']
+    #             )
+    #         if len(self.ids.topBar.right_action_items) < 4:
+    #             self.ids.topBar.right_action_items.insert(
+    #                 0,
+    #                 ['pencil', lambda x: self.edit_symptom(int(self.checks[0][0])),
+    #                  'Редактировать']
+    #             )
+
+    #     # If more than one row are selected, then we can only delete these
+    #     elif len(self.checks) > 1:
+    #         if len(self.ids.topBar.right_action_items) > 3:
+    #             self.ids.topBar.right_action_items.pop(0)
+    #     else:
+    #         while (len(self.ids.topBar.right_action_items) > 2):
+    #             self.ids.topBar.right_action_items.pop(0)
+
+    def on_row_press(self, instance_table, instance_cell_row):
+        index = instance_cell_row.index
+        data = instance_table.table_data
+        id = None
+        cols_num = len(instance_table.column_data)
+        if (index % cols_num != 0):
+            while index % cols_num:
+                index -= 1
+            row_obj = data.view_adapter.get_visible_view(index)
+            if row_obj:
+                id = int(row_obj.text)
+
+        if self.dialog:
+            self.dialog = None
+        if not self.dialog and id:
+
+            dbcontrol.open_session()
+            name = dbcontrol.get_symptom(id).name
+            dbcontrol.close_session()
+
             self.dialog = MDDialog(
-                title='Удаление',
-                text=f'Вы правда хотите удалить {len(self.checks)} симптомов?',
+                title=f'Выбран симптом "{name}"',
+                text=f'Выберите действие',
                 type="custom",
                 buttons=[
-                    MDRaisedButton(
+                    MDFlatButton(
                         text="ОТМЕНА",
                         on_release=self.dialog_dismiss
                     ),
-                    MDFlatButton(
+                    MDRectangleFlatButton(
                         text="УДАЛИТЬ",
-                        on_release=self.dialog_delete_symptom
-                    )
+                        on_release=lambda x: self.dialog_delete_symptom(id)
+                    ),
+                    MDRaisedButton(
+                        text="ИЗМЕНИТЬ",
+                        on_release=lambda x: self.edit_symptom(id)
+                    ),
                 ]
             )
             self.dialog.open()
-        # dbcontrol.open_session()
-        # for row in checked_rows:
-        #     dbcontrol.delete_symptom(int(row[0]))
-
-        # dbcontrol.close_session()
-
-        # Удаление из БД
-        # Обновление данных
-        # Обновление таблицы
-        print("DELETE")
-
-    def on_check(self, instance_table, current_row):
-        self.checks = instance_table.get_row_checks()
-        print(self.checks)
-
-        # If one row is selected, then we can edit or delete it
-        if len(self.checks) == 1:
-            if len(self.ids.topBar.right_action_items) < 3:
-                self.ids.topBar.right_action_items.insert(
-                    0,
-                    ['delete', lambda x: self.delete_symptom_dialog(), 'Удалить']
-                )
-            if len(self.ids.topBar.right_action_items) < 4:
-                self.ids.topBar.right_action_items.insert(
-                    0,
-                    ['pencil', lambda x, sid=int(self.checks[0][0]): self.edit_symptom(sid),
-                     'Редактировать']
-                )
-
-        # If more than one row are selected, then we can only delete these
-        elif len(self.checks) > 1:
-            if len(self.ids.topBar.right_action_items) > 3:
-                self.ids.topBar.right_action_items.pop(0)
-        else:
-            while (len(self.ids.topBar.right_action_items) > 2):
-                self.ids.topBar.right_action_items.pop(0)
-
-    def on_row_press(self, instance_table, instance_cell_row):
-        if (instance_cell_row.index % len(instance_table.column_data) != 0):
-            row = int(instance_cell_row.index/len(instance_table.column_data))
-            id = int(instance_table.row_data[row][0])
-            self.edit_symptom(id)
 
     def load_table(self):
         self.new_row_data = []
@@ -218,8 +306,9 @@ class SymptomsScreen(Screen):
             self.symptomsTable = MDDataTable(
                 pos_hint={'center_x': 0.5, 'top': 1},
                 size_hint=(1, 1),
-                rows_num=len(self.new_row_data)*2,
-                check=True,
+                rows_num=10,
+                # check=True,
+                use_pagination=True,
                 column_data=[
                     ("ID", dp(30)),
                     ("Название", dp(80)),
@@ -227,10 +316,12 @@ class SymptomsScreen(Screen):
                     ("Нет", dp(80)),
                     ("Стр.", dp(30)), ],
             )
-            self.symptomsTable.bind(on_check_press=self.on_check)
+            # self.symptomsTable.bind(on_check_press=self.on_check)
             self.symptomsTable.bind(on_row_press=self.on_row_press)
             self.ids.table_place.add_widget(self.symptomsTable)
-        self.symptomsTable.row_data = self.new_row_data
+        self.symptomsTable.row_data = sorted(
+            self.new_row_data, key=lambda l: l[self.filter])
+        uncheck_all_rows(self.symptomsTable)
 
     def on_enter(self):
         app.change_title('Симптомы')
@@ -279,6 +370,13 @@ class SymptomAddEditScreen(Screen):
 
     all_keywords = []
 
+    def on_pre_enter(self):
+        dbcontrol.open_session()
+        self.all_keywords = []
+        for keyword in dbcontrol.read_keywords():
+            self.all_keywords.append(keyword.word)
+        dbcontrol.close_session()
+
     def new_symptom(self):
         self.symptom_id = 0
         self.symptom_name = ''
@@ -292,11 +390,8 @@ class SymptomAddEditScreen(Screen):
         self.symptom_keywords_string = ""
         self.ids.keywordsInput.text = ""
         self.new_keywords = []
-        dbcontrol.open_session()
-        self.all_keywords = []
-        for keyword in dbcontrol.read_keywords():
-            self.all_keywords.append(keyword.word)
-        dbcontrol.close_session()
+        self.yes_menu_items = self.symptoms_yes_menu_gen()
+        self.no_menu_items = self.symptoms_no_menu_gen()
 
     def load_symptom(self, id):
         dbcontrol.open_session()
@@ -337,37 +432,40 @@ class SymptomAddEditScreen(Screen):
 
         self.symptom_keywords = []
         for keyword in dbcontrol.get_symptom(self.symptom_id).keywords:
-            self.symptom_keywords.append(keyword)
-        self.new_keywords = []
-        self.all_keywords = []
-        for keyword in dbcontrol.read_keywords():
-            self.all_keywords.append(keyword.word)
-        dbcontrol.close_session()
+            self.symptom_keywords.append(keyword.word)
 
     def save(self):
         if not (('' or None in [
                 self.symptom_name,
                 self.symptom_description,
                 self.symptom_page,
-                self.symptom_no_obj,
-                self.symptom_yes_obj
+                # self.symptom_no_obj,
+                # self.symptom_yes_obj
         ])) and self.symptom_page.isdigit():
             dbcontrol.open_session()
 
             if (self.symptom_id == 0):
                 print('save new')
                 dbcontrol.insert_symptom(
-                    self.symptom_name,
-                    self.symptom_description,
-                    int(self.symptom_page),
-                    self.symptom_yes_obj.id,
-                    self.symptom_no_obj.id
+                    self.symptom_name.strip(),
+                    self.symptom_description.strip(),
+                    int(self.symptom_page.strip()),
                 )
 
-                self.new_keywords = [
+                if self.symptom_no_obj:
+                    dbcontrol.get_symptom_by_name(
+                        self.symptom_name).no = self.symptom_no_obj.id
+                    dbcontrol.session.commit()
+
+                if self.symptom_yes_obj:
+                    dbcontrol.get_symptom_by_name(
+                        self.symptom_name).yes = self.symptom_yes_obj.id
+                    dbcontrol.session.commit()
+
+                new_keywords = [
                     x for x in self.symptom_keywords if x not in self.all_keywords]
 
-                for keyword in self.new_keywords:
+                for keyword in new_keywords:
                     dbcontrol.insert_keyword(keyword)
 
                 for keyword in self.symptom_keywords:
@@ -383,38 +481,53 @@ class SymptomAddEditScreen(Screen):
                     self.symptom_name,
                     self.symptom_description,
                     int(self.symptom_page),
-                    self.symptom_yes_obj.id,
-                    self.symptom_no_obj.id
+                    # self.symptom_yes_obj.id,
+                    # self.symptom_no_obj.id
                 )
 
-                actual_symptom_keywords = []
+                if self.symptom_no_obj:
+                    dbcontrol.get_symptom_by_name(
+                        self.symptom_name).no = self.symptom_no_obj.id
+                    dbcontrol.session.commit()
+
+                if self.symptom_yes_obj:
+                    dbcontrol.get_symptom_by_name(
+                        self.symptom_name).yes = self.symptom_yes_obj.id
+                    dbcontrol.session.commit()
+
+                actual_keywords = []
                 for keyword in dbcontrol.get_symptom(self.symptom_id).keywords:
-                    actual_symptom_keywords.append(keyword)
+                    actual_keywords.append(keyword.word)
+
+                print(f'Прошлые ключи:\n{actual_keywords}')
 
                 keywords_to_delete = [
-                    x for x in actual_symptom_keywords if x not in self.symptom_keywords]
+                    x for x in actual_keywords if x not in self.symptom_keywords]
 
-                if len(keywords_to_delete) > 0:
-                    for keyword in keywords_to_delete:
-                        dbcontrol.delete_ref_keyword(
-                            self.symptom_id, dbcontrol.get_keyword_by_word(keyword))
+                print(f'Отвязанные ключи:\n{keywords_to_delete}')
 
-                actual_symptom_keywords = []
-                for keyword in dbcontrol.get_symptom(self.symptom_id).keywords:
-                    actual_symptom_keywords.append(keyword)
-
-                self.symptom_keywords = [
-                    x for x in self.symptom_keywords if x not in actual_symptom_keywords]
-
-                self.new_keywords = [
+                new_keywords = [
                     x for x in self.symptom_keywords if x not in self.all_keywords]
 
-                for keyword in self.new_keywords:
+                for keyword in new_keywords:
                     dbcontrol.insert_keyword(keyword)
+
                     dbcontrol.insert_ref_keyword(
                         self.symptom_id,
                         dbcontrol.get_keyword_by_word(keyword).id
                     )
+
+                print(f'Новые ключи:\n{new_keywords}')
+
+                print(f'Настоящие ключи:\n{self.symptom_keywords}')
+
+                if len(keywords_to_delete) > 0:
+                    for keyword in keywords_to_delete:
+
+                        # print(f'\n\n\nУДАЛЕНИЕ: {
+                        #       dbcontrol.get_keyword_by_word(keyword)}\n\n\n')
+                        dbcontrol.delete_ref_keyword(
+                            self.symptom_id, dbcontrol.get_keyword_by_word(keyword).id)
 
             dbcontrol.session.commit()
             dbcontrol.close_session()
@@ -444,11 +557,9 @@ class SymptomAddEditScreen(Screen):
             self.manager.change_screen('symptomsScreen')
 
     def save_then_add(self):
-        self.save()
-        app.change_title('Добавление симптома')
-        self.new_symptom()
-        print("ADD")
-        pass
+        if self.save():
+            app.change_title('Добавление симптома')
+            self.new_symptom()
 
     def symptoms_yes_menu_gen(self):
         res = [
@@ -475,7 +586,6 @@ class SymptomAddEditScreen(Screen):
         return res
 
     def clear_yes_symptom(self):
-        print('пылесос')
         self.yesMenu.dismiss()
         self.symptom_yes_name = 'Выбрать'
         self.symptom_yes_obj = None
@@ -511,7 +621,6 @@ class SymptomAddEditScreen(Screen):
 
     def on_enter(self):
         self.yes_menu_items = self.symptoms_yes_menu_gen()
-
         self.no_menu_items = self.symptoms_no_menu_gen()
 
         self.yesMenu = MDDropdownMenu(
@@ -576,111 +685,357 @@ class SymptomAddEditScreen(Screen):
         self.symptom_no_obj = x
 
     # KEYWORDS
-    flag = False
-
     def keywords_enter(self, text):
         def find_common(list1, list2):
-            return sum(map(lambda x: x in list1 and x in list2, list1))
+            res = 0
+            for item in list1:
+                if item in list2:
+                    res += 1
+            return res
+            # return sum(map(lambda x: x in list1 and x in list2, list1))
         if (len(text) > 0):
-            flag = True
-            if (flag):
-                parsed_list = list(set(re.split(
-                    '\\s*\,+\\s*', re.sub('\,*$', '', text).lower().strip())))
-                if '' in parsed_list:
-                    parsed_list.remove('')
-                if ',' in parsed_list:
-                    parsed_list.remove(',')
-
-                print(parsed_list)
-                common = find_common(parsed_list, self.all_keywords)
-                # print(self.all_keywords)
-                self.ids.keywordsInput.helper_text = f'В базе есть {
-                    common} введенных слов, {len(parsed_list) - common} будет добавлено'
-                self.symptom_keywords = parsed_list
+            parsed_list = list(set(re.split(
+                '\\s*\,+\\s*', re.sub('\,*$', '', text).lower().strip())))
+            if '' in parsed_list:
+                parsed_list.remove('')
+            if ',' in parsed_list:
+                parsed_list.remove(',')
+            common = find_common(parsed_list, self.all_keywords)
+            # print(self.all_keywords)
+            self.ids.keywordsInput.helper_text = f'В базе есть {
+                common} введенных слов, {len(parsed_list) - common} будет добавлено'
+            self.symptom_keywords = parsed_list
         else:
-            self.symptom_keywords = []
             self.ids.keywordsInput.helper_text = "Вводите через запятую (Можно с пробелами)"
 
 
-class KeywordsScreen(Screen):
+class AddEditKeywordDialog_Content(MDBoxLayout):
+    pass
 
-    table_data = [
-        ('0', "кхе кхе"),
-        ('1', "ай больно в ноге"),
-        ('2', "ломает, соли - срочно соли"),
-    ]
+
+def list_of_unique(l):
+    n = []
+    for i in l:
+        if i not in n:
+            n.append(i)
+    return n
+
+
+def uncheck_all_rows(table: MDDataTable):
+    def deselect_rows(*args):
+        table.table_data.select_all('normal')
+    Clock.schedule_once(deselect_rows)
+
+
+# def row_is_visible(table: MDDataTable, row):
+
+
+def update_checks(table: MDDataTable, checked_collection, obj=None):
+
+    if (checked_collection):
+        uncheck_all_rows(table)
+
+        def action(*args):
+            data = table.table_data
+            for i in range(0, len(data.recycle_data), data.total_col_headings):
+                row_obj = data.view_adapter.get_visible_view(i)
+                if row_obj:
+                    data.on_mouse_select(row_obj)
+                    if list(table.row_data[row_obj.index//data.total_col_headings]) in checked_collection:
+                        row_obj.ids.check.state = 'down'
+                        # print('\n')
+                        # print(f'{row_obj.index//2}:')
+                        # print(table.row_data[row_obj.index//2])
+                    else:
+                        row_obj.ids.check.state = 'normal'
+
+                # Clock.schedule_once(update_row)
+
+        Clock.schedule_once(action)
+
+        # def get_checks(*args):
+        #     # obj.checks = list(set(checked_collection + table.get_row_checks()))
+        #     new_checked_collection = table.get_row_checks()
+        #     print('\n\n\nBEFORE:')
+        #     print(checked_collection)
+        #     print('\nAFTER:')
+        #     print(new_checked_collection)
+        #     global checks
+        #     checks = list_of_unique(
+        #         checked_collection + new_checked_collection)
+
+        # Clock.schedule_once(get_checks)
+
+
+class KeywordsScreen(Screen):
+    dialog = None
+    checks = []
 
     def on_kv_post(self, base_widget):
         self.wordsTable = None
 
+    # def on_leave(self):
+        # uncheck_all_rows(self.wordsTable)
+
     def search(self, text):
         if (len(text) > 0):
-            print(text)
             res = list(
-                filter(lambda x: text in x[1], self.table_data))
-            self.wordsTable.row_data = res
+                filter(lambda x: text.lower() in x[1].lower(), self.new_row_data))
+            self.wordsTable.row_data = sorted(
+                res, key=lambda l: l[0])
         else:
-            self.wordsTable.row_data = self.table_data
+            self.wordsTable.row_data = sorted(
+                self.new_row_data, key=lambda l: l[0])
 
-    def help_popup(self):
-        print("HELP")
+        # update_checks(self.wordsTable, self.checks, self)
+        # uncheck_all_rows(self.wordsTable)
+        # self.wordsTable.table_data.select_all('normal')
 
-    def add_user(self):
-        print("ADD")
+    def dialog_add_keyword(self):
+        if self.dialog:
+            self.dialog.dismiss()
+            self.dialog = None
+        if not self.dialog:
+            self.dialog = MDDialog(
+                title='Добавление ключевого слова',
+                type="custom",
+                content_cls=AddEditKeywordDialog_Content(),
+                buttons=[
+                    MDFlatButton(
+                        text="ОТМЕНИТЬ",
+                        on_release=self.dialog_dismiss
+                    ),
+                    MDRaisedButton(
+                        text="ДОБАВИТЬ",
+                        on_release=self.add_keyword
+                    )
+                ]
+            )
+        self.dialog.open()
 
-    def delete_user(self):
-        print("DELETE")
-
-    def edit_user(self):
-        print("EDIT")
-
-    def on_check(self, instance_table, current_row):
-        checks = instance_table.get_row_checks()
-        # print(len(self.ids.topBar.right_action_items))
-        print(checks)
-
-        # If one row is selected, then we can edit or delete it
-        if len(checks) == 1:
-            if len(self.ids.topBar.right_action_items) < 3:
-                self.ids.topBar.right_action_items.insert(
-                    0,
-                    ['delete', lambda x: self.delete_user(), 'Удалить']
-                )
-            if len(self.ids.topBar.right_action_items) < 4:
-                self.ids.topBar.right_action_items.insert(
-                    0,
-                    ['pencil', lambda x: self.edit_user(), 'Редактировать']
-                )
-
-        # If more than one row are selected, then we can only delete these
-        elif len(checks) > 1:
-            if len(self.ids.topBar.right_action_items) > 3:
-                self.ids.topBar.right_action_items.pop(0)
+    def add_keyword(self, obj):
+        new_word = self.dialog.content_cls.ids.wordField.text.strip()
+        if (len(new_word) > 0):
+            dbcontrol.open_session()
+            dbcontrol.insert_keyword(new_word)
+            dbcontrol.close_session()
+            self.dialog.dismiss()
+            self.dialog = None
+            self.load_table()
         else:
-            while (len(self.ids.topBar.right_action_items) > 2):
-                self.ids.topBar.right_action_items.pop(0)
+            self.dialog.content_cls.ids.wordField.hint_text = "Поле не может быть пустым"
+            self.dialog.content_cls.ids.wordField.hint_text_color_normal = "red"
 
-        # print(instance_table.get_row_checks())
+    def on_row_press(self, instance_table, instance_cell_row):
+        index = instance_cell_row.index
+        data = instance_table.table_data
+        cols_num = len(instance_table.column_data)
+        id = None
+        if (index % cols_num != 0):
+            while index % cols_num:
+                index -= 1
+            row_obj = data.view_adapter.get_visible_view(index)
+            if row_obj:
+                id = int(row_obj.text)
+
+        if self.dialog:
+            self.dialog.dismiss()
+            self.dialog = None
+        if not self.dialog and id:
+            dbcontrol.open_session()
+            word = dbcontrol.get_keyword(id).word
+            dbcontrol.close_session()
+            self.dialog = MDDialog(
+                title=f'Выбрано слово "{word}"',
+                text=f'Выберите действие',
+                type="custom",
+                buttons=[
+                    MDFlatButton(
+                        text="ОТМЕНА",
+                        on_release=self.dialog_dismiss
+                    ),
+                    MDRectangleFlatButton(
+                        text="УДАЛИТЬ",
+                        on_release=lambda x: self.dialog_delete_keyword(id)
+                    ),
+                    MDRaisedButton(
+                        text="ИЗМЕНИТЬ",
+                        on_release=lambda x: self.dialog_edit_keyword(id)
+                    ),
+                ]
+            )
+            self.dialog.open()
+
+    def dialog_edit_keyword(self, id):
+        if self.dialog:
+            self.dialog.dismiss()
+            self.dialog = None
+        if not self.dialog:
+            self.dialog = MDDialog(
+                title='Изменение ключевого слова',
+                type="custom",
+                content_cls=AddEditKeywordDialog_Content(),
+                buttons=[
+                    MDFlatButton(
+                        text="ОТМЕНИТЬ",
+                        on_release=self.dialog_dismiss
+                    ),
+                    MDRaisedButton(
+                        text="CОХРАНИТЬ",
+                        on_release=lambda x: self.edit_keyword(id)
+                    )
+                ]
+            )
+        dbcontrol.open_session()
+        self.dialog.content_cls.ids.wordField.text = dbcontrol.get_keyword(
+            id).word
+        dbcontrol.close_session()
+        self.dialog.open()
+
+    def edit_keyword(self, id):
+        new_word = self.dialog.content_cls.ids.wordField.text.strip()
+        # print(self.dialog.content_cls.ids.wordField.text)
+        if (len(new_word) > 0):
+            dbcontrol.open_session()
+            dbcontrol.update_keyword(id, new_word)
+            dbcontrol.close_session()
+            self.dialog.dismiss()
+            self.dialog = None
+            self.load_table()
+        else:
+            self.dialog.content_cls.ids.wordField.hint_text = "Поле не может быть пустым"
+            self.dialog.content_cls.ids.wordField.hint_text_color_normal = "red"
+
+    def dialog_delete_keyword(self, id):
+        if self.dialog:
+            self.dialog.dismiss()
+            self.dialog = None
+        if not self.dialog:
+            self.dialog = MDDialog(
+                title='Удаление',
+                text=f'Вы правда хотите удалить это ключевое слово?',
+                type="custom",
+                buttons=[
+                    MDRaisedButton(
+                        text="ОТМЕНА",
+                        on_release=self.dialog_dismiss
+                    ),
+                    MDFlatButton(
+                        text="УДАЛИТЬ",
+                        on_release=lambda x: self.delete_keyword(id)
+                    )
+                ]
+            )
+            self.dialog.open()
+
+    def delete_keyword(self, id):
+        dbcontrol.open_session()
+        dbcontrol.delete_keyword(id)
+        dbcontrol.close_session()
+        # uncheck_all_rows(self.wordsTable)
+        self.load_table()
+        self.dialog.dismiss()
+        self.dialog = None
+
+    def dialog_dismiss(self, obj):
+        self.dialog.dismiss()
+        self.dialog = None
+
+    def dialog_help(self):
+        if self.dialog:
+            self.dialog.dismiss()
+            self.dialog = None
+        if not self.dialog:
+            self.dialog = MDDialog(
+                title='Помощь',
+                text='Для изменения или удаления ключевого слова нажмите на строку с нужным словом.\n\nДля фильтрации слов воспользуйтесь строкой поиска внизу экрана.',
+                type="custom",
+                buttons=[
+                    MDRaisedButton(
+                        text="ОК",
+                        on_release=self.dialog_dismiss
+                    ),
+                ]
+            )
+            self.dialog.open()
+
+    # def on_check(self, instance_table, current_row):
+    #     def update(*args):
+    #         # if len(instance_table.row_data) < len(self.new_row_data):
+    #         for row in instance_table.row_data:
+    #             row = list(row)
+    #             if row in instance_table.get_row_checks():
+    #                 if row not in self.checks:
+    #                     self.checks.append(row)
+    #             elif row in self.checks:
+    #                 print('гуй')
+    #                 self.checks.remove(row)
+    #         # else:
+    #         #     self.checks = instance_table.get_row_checks()
+    #         print('\nТЫК')
+    #         print(self.checks)
+
+    #     def update_menu(*args):
+    #         # If one row is selected, then we can edit or delete it
+    #         if len(self.checks) == 1:
+    #             if len(self.ids.topBar.right_action_items) < 3:
+    #                 self.ids.topBar.right_action_items.insert(
+    #                     0,
+    #                     ['delete', lambda x: self.dialog_delete_keyword(),
+    #                         'Удалить']
+    #                 )
+    #             if len(self.ids.topBar.right_action_items) < 4:
+    #                 self.ids.topBar.right_action_items.insert(
+    #                     0,
+    #                     ['pencil', lambda x: self.dialog_edit_keyword(
+    #                         int(self.checks[0][0])), 'Редактировать']
+    #                 )
+
+    #         # If more than one row are selected, then we can only delete these
+    #         elif len(self.checks) > 1:
+    #             if len(self.ids.topBar.right_action_items) > 3:
+    #                 self.ids.topBar.right_action_items.pop(0)
+    #         else:
+    #             while (len(self.ids.topBar.right_action_items) > 2):
+    #                 self.ids.topBar.right_action_items.pop(0)
+
+    #     Clock.schedule_once(update)
+    #     Clock.schedule_once(update_menu)
 
     def load_table(self):
+        self.new_row_data = []
+        dbcontrol.open_session()
+        for keyword in dbcontrol.read_keywords():
+            self.new_row_data.append(keyword.tuple())
+        dbcontrol.close_session()
+
+        # print(self.new_row_data)
+
         if self.wordsTable == None:
             self.wordsTable = MDDataTable(
                 pos_hint={'center_x': 0.5, 'top': 1},
                 size_hint=(1, 1),
+                rows_num=10,
+                # check=True,
                 use_pagination=True,
-                check=True,
                 column_data=[
                     ("ID", dp(50)),
                     ("Слово", dp(50)),
                 ],
-                row_data=self.table_data
             )
-            self.wordsTable.bind(on_check_press=self.on_check)
-
+            # self.wordsTable.bind(on_check_press=self.on_check)
+            self.wordsTable.bind(on_row_press=self.on_row_press)
             self.ids.table_place.add_widget(self.wordsTable)
+
+        self.wordsTable.row_data = sorted(
+            self.new_row_data, key=lambda l: l[0])
+
+        # self.wordsTable.table_data.select_all('normal')
 
     def on_enter(self):
         app.change_title('Ключевые слова')
+        if self.wordsTable:
+            uncheck_all_rows(self.wordsTable)
         Clock.schedule_once(self.change_screen)
 
     def change_screen(self, dt):
@@ -692,83 +1047,26 @@ class AddEditUserDialog_Content(MDBoxLayout):
 
 
 class UsersScreen(Screen):
-    dialog = None
+    new_row_data = []
 
-    table_data = [
-        ('user0', "qwerty"),
-        ('user1', "qwerty123"),
-        ('user2', "qwerty123456"),
-    ]
+    dialog = None
 
     def on_kv_post(self, base_widget):
         self.usersTable = None
 
     def search(self, text):
         if (len(text) > 0):
-            print(text)
+            # print(text)
             res = list(
                 filter(lambda x: text in x[0], self.table_data))
             self.usersTable.row_data = res
         else:
             self.usersTable.row_data = self.table_data
 
-    def on_row_press(self, instance_table, instance_cell_row):
-        row = int(instance_cell_row.index/len(instance_table.column_data))
-        # uid = int(instance_table.row_data[row][0])
-        self.edit_user(row)
-
-    def help_popup(self):
-        print("HELP")
-
-    def delete_user(self):
-        print("DELETE")
-
-    def on_check(self, instance_table, current_row):
-        checks = instance_table.get_row_checks()
-        # print(len(self.ids.topBar.right_action_items))
-        print(checks)
-
-        # If one row is selected, then we can edit or delete it
-        if len(checks) == 1:
-            if len(self.ids.topBar.right_action_items) < 3:
-                self.ids.topBar.right_action_items.insert(
-                    0,
-                    ['delete', lambda x: self.delete_user(), 'Удалить']
-                )
-            if len(self.ids.topBar.right_action_items) < 4:
-                self.ids.topBar.right_action_items.insert(
-                    0,
-                    ['pencil', lambda x: self.edit_user(), 'Редактировать']
-                )
-
-        # If more than one row are selected, then we can only delete these
-        elif len(checks) > 1:
-            if len(self.ids.topBar.right_action_items) > 3:
-                self.ids.topBar.right_action_items.pop(0)
-        else:
-            while (len(self.ids.topBar.right_action_items) > 2):
-                self.ids.topBar.right_action_items.pop(0)
-
-        # print(instance_table.get_row_checks())
-
-    def load_table(self):
-        if self.usersTable == None:
-            self.usersTable = MDDataTable(
-                pos_hint={'center_x': 0.5, 'top': 1},
-                size_hint=(1, 1),
-                use_pagination=True,
-                check=True,
-                column_data=[
-                    ("Логин", dp(50)),
-                    ("Пароль", dp(50)),
-                ],
-                row_data=self.table_data
-            )
-            self.usersTable.bind(on_check_press=self.on_check)
-            self.usersTable.bind(on_row_press=self.on_row_press)
-            self.ids.table_place.add_widget(self.usersTable)
-
-    def add_user(self):
+    def dialog_add_user(self):
+        if self.dialog:
+            self.dialog.dismiss()
+            self.dialog = None
         if not self.dialog:
             self.dialog = MDDialog(
                 title='Добавление пользователя',
@@ -781,24 +1079,76 @@ class UsersScreen(Screen):
                     ),
                     MDRaisedButton(
                         text="ДОБАВИТЬ",
-                        on_release=self.dialog_add_user
+                        on_release=self.add_user
                     )
                 ]
             )
         self.dialog.open()
 
-    def dialog_add_user(self, obj):
-        print(self.dialog.content_cls.ids.loginField.text)
-        print(self.dialog.content_cls.ids.passwordField.text)
-        self.dialog.dismiss()
-        self.dialog = None
+    def add_user(self, obj):
+        name = self.dialog.content_cls.ids.loginField.text.strip()
+        password = self.dialog.content_cls.ids.passwordField.text.strip()
+        if (len(name) > 0 and len(password) > 0):
+            dbcontrol.open_session()
+            dbcontrol.insert_user(name, password)
+            dbcontrol.close_session()
+            self.dialog.dismiss()
+            self.dialog = None
+            self.load_table()
+        else:
+            if len(name) == 0:
+                self.dialog.content_cls.ids.loginField.hint_text = "Поле не может быть пустым"
+                self.dialog.content_cls.ids.loginField.hint_text_color_normal = "red"
+            if len(password) == 0:
+                self.dialog.content_cls.ids.passwordField.hint_text = "Поле не может быть пустым"
+                self.dialog.content_cls.ids.passwordField.hint_text_color_normal = "red"
 
-    def edit_user(self, uid):
+    def on_row_press(self, instance_table, instance_cell_row):
+        index = instance_cell_row.index
+        data = instance_table.table_data
+        cols_num = len(instance_table.column_data)
+        name = None
+        if (index % cols_num != 0):
+            while index % cols_num:
+                index -= 1
+            row_obj = data.view_adapter.get_visible_view(index)
+            if row_obj:
+                name = row_obj.text
+
+        if self.dialog:
+            self.dialog.dismiss()
+            self.dialog = None
+        if not self.dialog and name:
+            self.dialog = MDDialog(
+                title=f'Выбран пользователь "{name}"',
+                text=f'Выберите действие',
+                type="custom",
+                buttons=[
+                    MDFlatButton(
+                        text="ОТМЕНА",
+                        on_release=self.dialog_dismiss
+                    ),
+                    MDRectangleFlatButton(
+                        text="УДАЛИТЬ",
+                        on_release=lambda x: self.dialog_delete_user(name)
+                    ),
+                    MDRaisedButton(
+                        text="ИЗМЕНИТЬ",
+                        on_release=lambda x: self.dialog_edit_user(name)
+                    ),
+                ]
+            )
+            self.dialog.open()
+
+    def dialog_edit_user(self, name):
+        if self.dialog:
+            self.dialog.dismiss()
+            self.dialog = None
         if not self.dialog:
             self.dialog = MDDialog(
                 title='Изменение пользователя',
                 type="custom",
-                content_cls=AddEditUserDialog_Content(),
+                content_cls=AddEditKeywordDialog_Content(),
                 buttons=[
                     MDFlatButton(
                         text="ОТМЕНИТЬ",
@@ -806,19 +1156,135 @@ class UsersScreen(Screen):
                     ),
                     MDRaisedButton(
                         text="CОХРАНИТЬ",
-                        on_release=self.dialog_edit_user
+                        on_release=lambda x: self.edit_user(name)
                     )
                 ]
             )
-        self.dialog.content_cls.ids.loginField.text = self.table_data[uid][0]
-        self.dialog.content_cls.ids.passwordField.text = self.table_data[uid][1]
+        self.dialog.content_cls.ids.wordField.hint_text = "Пароль"
+        dbcontrol.open_session()
+        self.dialog.content_cls.ids.wordField.text = dbcontrol.get_user(
+            name).password
+        dbcontrol.close_session()
         self.dialog.open()
 
-    def dialog_edit_user(self, obj):
-        print(self.dialog.content_cls.ids.loginField.text)
-        print(self.dialog.content_cls.ids.passwordField.text)
+    def edit_user(self, name):
+
+        new_password = self.dialog.content_cls.ids.wordField.text.strip()
+        # print(self.dialog.content_cls.ids.wordField.text)
+        if (len(new_password) > 0):
+            dbcontrol.open_session()
+            dbcontrol.update_user_password(name, new_password)
+            dbcontrol.close_session()
+            self.dialog.dismiss()
+            self.dialog = None
+            self.load_table()
+        else:
+            self.dialog.content_cls.ids.wordField.hint_text = "Поле не может быть пустым"
+            self.dialog.content_cls.ids.wordField.hint_text_color_normal = "red"
+
+    def dialog_delete_user(self, name):
+        if self.dialog:
+            self.dialog.dismiss()
+            self.dialog = None
+        if not self.dialog:
+            self.dialog = MDDialog(
+                title='Удаление',
+                text=f'Вы правда хотите удалить этого пользователя?',
+                type="custom",
+                buttons=[
+                    MDRaisedButton(
+                        text="ОТМЕНА",
+                        on_release=self.dialog_dismiss
+                    ),
+                    MDFlatButton(
+                        text="УДАЛИТЬ",
+                        on_release=lambda x: self.delete_user(name)
+                    )
+                ]
+            )
+            self.dialog.open()
+
+    def delete_user(self, name):
+        dbcontrol.open_session()
+        dbcontrol.delete_user(name)
+        dbcontrol.close_session()
+        # uncheck_all_rows(self.wordsTable)
+        self.load_table()
         self.dialog.dismiss()
         self.dialog = None
+
+    def dialog_help(self):
+        if self.dialog:
+            self.dialog.dismiss()
+            self.dialog = None
+        if not self.dialog:
+            self.dialog = MDDialog(
+                title='Помощь',
+                text='Для изменения или удаления данных пользователя нажмите на строку с нужным пользователем.\n\nДля фильтрации пользователей воспользуйтесь строкой поиска внизу экрана.',
+                type="custom",
+                buttons=[
+                    MDRaisedButton(
+                        text="ОК",
+                        on_release=self.dialog_dismiss
+                    ),
+                ]
+            )
+            self.dialog.open()
+
+    # def on_check(self, instance_table, current_row):
+    #     checks = instance_table.get_row_checks()
+    #     # print(len(self.ids.topBar.right_action_items))
+    #     print(checks)
+
+    #     # If one row is selected, then we can edit or delete it
+    #     if len(checks) == 1:
+    #         if len(self.ids.topBar.right_action_items) < 3:
+    #             self.ids.topBar.right_action_items.insert(
+    #                 0,
+    #                 ['delete', lambda x: self.delete_user(), 'Удалить']
+    #             )
+    #         if len(self.ids.topBar.right_action_items) < 4:
+    #             self.ids.topBar.right_action_items.insert(
+    #                 0,
+    #                 ['pencil', lambda x: self.edit_user(), 'Редактировать']
+    #             )
+
+    #     # If more than one row are selected, then we can only delete these
+    #     elif len(checks) > 1:
+    #         if len(self.ids.topBar.right_action_items) > 3:
+    #             self.ids.topBar.right_action_items.pop(0)
+    #     else:
+    #         while (len(self.ids.topBar.right_action_items) > 2):
+    #             self.ids.topBar.right_action_items.pop(0)
+
+    #     # print(instance_table.get_row_checks())
+
+    def load_table(self):
+
+        self.new_row_data = []
+        dbcontrol.open_session()
+        for user in dbcontrol.read_users():
+            self.new_row_data.append(user.tuple())
+        dbcontrol.close_session()
+
+        if self.usersTable == None:
+            self.usersTable = MDDataTable(
+                pos_hint={'center_x': 0.5, 'top': 1},
+                size_hint=(1, 1),
+                use_pagination=True,
+                rows_num=10,
+                column_data=[
+                    ("Логин", dp(50)),
+                    ("Пароль", dp(50)),
+                ],
+
+            )
+            # self.usersTable.bind(on_check_press=self.on_check)
+            self.usersTable.bind(on_row_press=self.on_row_press)
+            self.ids.table_place.add_widget(self.usersTable)
+
+        self.usersTable.row_data = sorted(
+            self.new_row_data, key=lambda l: l[0])
 
     def dialog_dismiss(self, obj):
         self.dialog.dismiss()
