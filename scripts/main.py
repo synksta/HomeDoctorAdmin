@@ -14,10 +14,8 @@ from kivymd.uix.button import MDRectangleFlatButton
 from kivymd.uix.button import MDRaisedButton
 from kivymd.uix.list import OneLineIconListItem
 from kivymd.uix.dialog import MDDialog
-from kivymd.uix.snackbar import Snackbar
 from kivymd.uix.snackbar import MDSnackbar
 from kivy.metrics import dp
-from kivy.metrics import sp
 from kivy.lang.builder import Builder
 from kivy.clock import Clock
 from kivy.properties import ObjectProperty
@@ -534,17 +532,8 @@ class SymptomAddEditScreen(Screen):
 
                 if len(keywords_to_delete) > 0:
                     for keyword in keywords_to_delete:
-
-                        # print(f'\n\n\nУДАЛЕНИЕ: {
-                        #       dbcontrol.get_keyword_by_word(keyword)}\n\n\n')
                         dbcontrol.delete_ref_keyword(
                             self.symptom_id, dbcontrol.get_keyword_by_word(keyword).id)
-
-                # actual_keywords = []
-                # for keyword in dbcontrol.get_symptom(self.symptom_id).keywords:
-                #     actual_keywords.append(keyword.word)
-
-                # print(f'Настоящие ключи:\n{actual_keywords}')
 
             dbcontrol.session.commit()
             dbcontrol.close_session()
@@ -712,13 +701,12 @@ class SymptomAddEditScreen(Screen):
             # return sum(map(lambda x: x in list1 and x in list2, list1))
         if (len(text) > 0):
             parsed_list = list(set(re.split(
-                '\\s*\,+\\s*', re.sub('\,*$', '', text).lower().strip())))
+                '\\s*,+\\s*', re.sub(',*$', '', text).lower().strip())))
             if '' in parsed_list:
                 parsed_list.remove('')
             if ',' in parsed_list:
                 parsed_list.remove(',')
             common = find_common(parsed_list, self.all_keywords)
-            # print(self.all_keywords)
             self.ids.keywordsInput.helper_text = f'В базе есть {
                 common} введенных слов, {len(parsed_list) - common} будет добавлено'
             self.symptom_keywords = parsed_list
@@ -742,9 +730,6 @@ def uncheck_all_rows(table: MDDataTable):
     def deselect_rows(*args):
         table.table_data.select_all('normal')
     Clock.schedule_once(deselect_rows)
-
-
-# def row_is_visible(table: MDDataTable, row):
 
 
 def update_checks(table: MDDataTable, checked_collection, obj=None):
@@ -1354,7 +1339,6 @@ class HomeDoctor(MDApp):
         return Builder.load_file('../kivy/main.kv')
 
 
-# Config.set('kivy', 'window_icon', '../data/images/medical-bag.png')
 app = HomeDoctor()
 
 if __name__ == '__main__':

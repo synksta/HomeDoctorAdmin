@@ -6,7 +6,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 # DB part
 
-f = open('./data/connection/connection.json')
+f = open('./connection/connection.json')
 data = None
 if f:
     data = json.load(f)
