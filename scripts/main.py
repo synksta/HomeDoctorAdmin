@@ -1,5 +1,6 @@
 import time
 import re
+from kivy.config import Config
 from kivy.lang import Builder
 from kivy.core.window import Window
 from kivymd.app import MDApp
@@ -38,10 +39,15 @@ class CustomSnackbar(MDSnackbar):
 
 
 class LoginScreen(Screen):
+    name = StringProperty('')
+    password = StringProperty('')
+
     def on_kv_post(self, base_widget):
         self.manager.screen_history.append(self.name)
 
     def on_enter(self):
+        # print(self.ids.nameField.text)  # = ''
+        # self.ids.passwordField.text = ''
         app.change_title('Вход')
 
     def login(self):
@@ -495,6 +501,7 @@ class SymptomAddEditScreen(Screen):
                         self.symptom_name).yes = self.symptom_yes_obj.id
                     dbcontrol.session.commit()
 
+                print(f'Введенные ключи:\n{self.symptom_keywords}')
                 actual_keywords = []
                 for keyword in dbcontrol.get_symptom(self.symptom_id).keywords:
                     actual_keywords.append(keyword.word)
@@ -512,14 +519,18 @@ class SymptomAddEditScreen(Screen):
                 for keyword in new_keywords:
                     dbcontrol.insert_keyword(keyword)
 
+                print(f'Новые ключи:\n{new_keywords}')
+
+                new_to_symptom_keywords = [
+                    x for x in self.symptom_keywords if x not in actual_keywords]
+
+                for keyword in new_to_symptom_keywords:
                     dbcontrol.insert_ref_keyword(
                         self.symptom_id,
                         dbcontrol.get_keyword_by_word(keyword).id
                     )
 
-                print(f'Новые ключи:\n{new_keywords}')
-
-                print(f'Настоящие ключи:\n{self.symptom_keywords}')
+                print(f'Новые ключи для сипмтома:\n{new_to_symptom_keywords}')
 
                 if len(keywords_to_delete) > 0:
                     for keyword in keywords_to_delete:
@@ -528,6 +539,12 @@ class SymptomAddEditScreen(Screen):
                         #       dbcontrol.get_keyword_by_word(keyword)}\n\n\n')
                         dbcontrol.delete_ref_keyword(
                             self.symptom_id, dbcontrol.get_keyword_by_word(keyword).id)
+
+                # actual_keywords = []
+                # for keyword in dbcontrol.get_symptom(self.symptom_id).keywords:
+                #     actual_keywords.append(keyword.word)
+
+                # print(f'Настоящие ключи:\n{actual_keywords}')
 
             dbcontrol.session.commit()
             dbcontrol.close_session()
@@ -1058,10 +1075,10 @@ class UsersScreen(Screen):
         if (len(text) > 0):
             # print(text)
             res = list(
-                filter(lambda x: text in x[0], self.table_data))
+                filter(lambda x: text.lower() in x[0].lower(), self.new_row_data))
             self.usersTable.row_data = res
         else:
-            self.usersTable.row_data = self.table_data
+            self.usersTable.row_data = self.new_row_data
 
     def dialog_add_user(self):
         if self.dialog:
@@ -1330,12 +1347,14 @@ class HomeDoctor(MDApp):
         self.title = f'{self.appname} - {new}'
 
     def build(self):
+        self.icon = '../data/images/medical-bag.png'
         self.theme_cls.theme_style = 'Dark'
         self.theme_cls.primary_palette = 'Orange'
         self.theme_cls.accent_palette = 'DeepPurple'
         return Builder.load_file('../kivy/main.kv')
 
 
+# Config.set('kivy', 'window_icon', '../data/images/medical-bag.png')
 app = HomeDoctor()
 
 if __name__ == '__main__':

@@ -1,10 +1,19 @@
+import json
+
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 
 # DB part
-engine = create_engine(
-    "postgresql://postgres:zukosuper2003@localhost:5432/HomeDoctor")
+
+f = open('./data/connection/connection.json')
+data = None
+if f:
+    data = json.load(f)
+if data:
+    # engine = create_engine(f"postgresql://postgres:zukosuper2003@localhost:5432/HomeDoctor")
+    engine = create_engine(
+        f"postgresql://{data['username']}:{data['password']}@{data['host']}:{data['port']}/{data['dbname']}")
 
 Base = declarative_base()
 
