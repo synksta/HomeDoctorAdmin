@@ -196,16 +196,16 @@ def show_ref_keywords():
     all_ref_keywords = read_ref_keywords()
     print("All Ref Keywords:")
     for ref_keyword in all_ref_keywords:
-        print(f"Symptom ID: {ref_keyword.symptom}, Keyword ID: {
-              ref_keyword.keyword}")
+        print(
+            f"Symptom ID: {ref_keyword.symptom}, Keyword ID: {ref_keyword.keyword}")
 
 
 def show_symptoms():
     all_symptoms = read_symptoms()
     print("All Symptoms:")
     for symptom in all_symptoms:
-        print(f"ID: {symptom.id}, Name: {
-              symptom.name}, Description: {symptom.description}")
+        print(
+            f"ID: {symptom.id}, Name: {symptom.name}, Description: {symptom.description}")
 
 
 def show_users():

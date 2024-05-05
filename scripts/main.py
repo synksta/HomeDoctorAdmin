@@ -707,8 +707,7 @@ class SymptomAddEditScreen(Screen):
             if ',' in parsed_list:
                 parsed_list.remove(',')
             common = find_common(parsed_list, self.all_keywords)
-            self.ids.keywordsInput.helper_text = f'В базе есть {
-                common} введенных слов, {len(parsed_list) - common} будет добавлено'
+            self.ids.keywordsInput.helper_text = f"В базе есть {common} введенных слов, {len(parsed_list) - common} будет добавлено"
             self.symptom_keywords = parsed_list
         else:
             self.ids.keywordsInput.helper_text = "Вводите через запятую (Можно с пробелами)"
