@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Загрузка и распознавание речи</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 50px auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+        .output {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Загрузка и распознавание речи</h2>
+        <form id="upload-form" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="audio-file">Выберите .wav файл:</label>
+                <input type="file" id="audio-file" name="audio">
+            </div>
+            <button type="submit" class="btn">Отправить</button>
+        </form>
+        <div id="symptom" class="output"></div>
+        <div id="diagnoz" class="output"></div>
+        <div id="Ysymptom" class="output"></div>
+        <div id="Nsymptom" class="output"></div>
+        <div id="page" class="output"></div>
+        <div id="descript" class="output"></div>
+        <div id="keyword" class="output"></div>
+    </div>
+
+    <script>
+        document.getElementById('upload-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            var form = e.target;
+            var fileInput = form.querySelector('input[type="file"]');
+            var file = fileInput.files[0];
+
+            var formData = new FormData();
+            formData.append('audio', file);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/speech-to-text', true);
+
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.status === 200) {
+                        var response = JSON.parse(xhr.responseText);
+                        var outputDiv = document.getElementById('symptom');
+                        outputDiv.innerHTML = 'Симптом: ' + response.symptom + '</p>';
+                        var outputDiv = document.getElementById('diagnoz');
+                        outputDiv.innerHTML = 'Диагноз: ' + response.diagnoz + '</p>';
+                        var outputDiv = document.getElementById('Ysymptom');
+                        outputDiv.innerHTML = 'Да симптом: ' + response.Ysymptom + '</p>';
+                        var outputDiv = document.getElementById('Nsymptom');
+                        outputDiv.innerHTML = 'Нет симптом: ' + response.Nsymptom + '</p>';
+                        var outputDiv = document.getElementById('page');
+                        outputDiv.innerHTML = 'Страница: ' + response.page + '</p>';
+                        var outputDiv = document.getElementById('descript');
+                        outputDiv.innerHTML = 'Описание: ' + response.descript + '</p>';
+                        var outputDiv = document.getElementById('keyword');
+                        outputDiv.innerHTML = 'Ключевые слова: ' + response.keyword + '</p>';
+                    } else {
+                        alert('Ошибка при отправке файла: ' + xhr.responseText);
+                    }
+                }
+            };
+
+            xhr.send(formData);
+        });
+    </script>
+</body>
+</html>
