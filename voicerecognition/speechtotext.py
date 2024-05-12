@@ -28,7 +28,7 @@ def get_text_from_speech(path):
                     result += "\n"
                     last_n = True
 
-        wav.close
+        wav.close()
 
         recognized = json.loads(recognizer.FinalResult())
         result += f" {recognized['text']}"
@@ -36,4 +36,4 @@ def get_text_from_speech(path):
 
 
 if __name__ == "__main__":
-    print(get_text_from_speech(path="./temp/11052024182533.wav"))
+    pass
