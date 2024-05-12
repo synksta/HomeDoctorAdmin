@@ -1,15 +1,17 @@
+# from flask import flash, redirect, url_for
+# from librosa import core
+# from werkzeug.utils import secure_filename
+# import time
+# import sys
+
 from vosk import Model, KaldiRecognizer
-from flask import Flask, render_template, request, flash, redirect, url_for
-import sys
+from flask import Flask, render_template, request
 import json
 import os
 import librosa
 import soundfile as sf
-from librosa import core
 
 # объясняется ниже
-from werkzeug.utils import secure_filename
-import time
 import wave
 from parser_1 import parseHomeDoc
 
@@ -23,14 +25,14 @@ def correct(filepath):
 
 
 def recognition(filepath):
-    wf = wave.open(filepath, "rb")
+    wav = wave.open(filepath, "rb")
     rec = KaldiRecognizer(model, 16000)
 
     result = ""
     last_n = False
 
     while True:
-        data = wf.readframes(16000)
+        data = wav.readframes(16000)
         if len(data) == 0:
             break
 
@@ -57,14 +59,14 @@ app = Flask(__name__)
 
 
 # определяем функцию для обработки запросов к корневому URL
-@app.route("/")
-def index():
-    return render_template("index.html")
+# @app.route("/")
+# def index():
+#     return render_template("index.html")
 
 
-@app.route("/microphone", methods=["GET"])
-def micro():
-    return render_template("microphone.html")
+# @app.route("/microphone", methods=["GET"])
+# def micro():
+#     return render_template("microphone.html")
 
 
 @app.route("/speech-to-text", methods=["POST"])
@@ -85,7 +87,7 @@ def speech_to_text():
     # Распознаем речь и получаем текст
     recognized_text = recognition(save_path + "/" + file_name)
 
-    print(recognized_text)
+    # print(recognized_text)
 
     # Удаляем временный файл
     os.remove(save_path + "/" + file_name)
@@ -102,6 +104,11 @@ def speech_to_text():
     return data
 
 
+def main():
+    # app.run()
+    print(recognition("./test.wav"))
+
+
 # запускаем приложение
 if __name__ == "__main__":
-    app.run()
+    main()

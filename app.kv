@@ -1,0 +1,390 @@
+#:import utils kivy.utils
+
+Manager:
+    # LoginScreen:
+    MenuScreen:
+    SymptomsScreen:
+    SymptomAddEditScreen:
+    KeywordsScreen:
+    UsersScreen:
+
+<InnerLayout@MDBoxLayout>:
+    padding: 10
+    spacing: 10
+
+<CustomSnackbar>
+
+    MDIconButton:
+        # height: self.texture_size[1]
+        icon: root.icon
+        opposite_colors: True
+
+    MDLabel:
+        id: text_bar
+        size_hint_y: None
+        height: self.texture_size[1]
+        text: root.text
+        font_size: root.font_size
+        theme_text_color: 'Custom'
+        text_color: 'ffffff'
+        shorten: True
+        shorten_from: 'right'
+        pos_hint: {'center_y': .5}
+
+<LoginScreen>:
+    name: 'loginScreen'
+
+    MDCard:
+        size_hint: None, None
+        size: 300, 300
+        pos_hint: {'center_x': 0.5,'center_y': 0.5}
+        # elevation: 10
+        padding: 25
+        spacing: 25
+        orientation: 'vertical'
+
+        MDLabel:
+            id: welcome_label
+            text: 'Привет!'
+            font_size: 32
+            valign: 'top'
+            halign: 'center'
+            size_hint: 1, None
+            height: self.texture_size[1]
+            # padding_y: 15
+
+        MDTextField:
+            id: nameField
+            mode: 'round'
+            # text: root.name
+            hint_text: 'username'
+            icon_right: 'account'
+            size_hint_x: None
+            width: 200
+            font_size: 16
+            pos_hint: {'center_x': 0.5}
+
+        MDTextField:
+            id: passwordField
+            mode: 'round'
+            # text: root.password
+            password: True
+            hint_text: 'password'
+            icon_right: 'form-textbox-password'
+            size_hint_x: None
+            width: 200
+            font_size: 16
+            pos_hint: {'center_x': 0.5}
+
+        MDFillRoundFlatButton:
+            # MDRaisedButton:
+            text: 'Вход'
+            pos_hint: {'center_x': 0.5}
+            on_release: root.login()
+            # app.root.change_screen('menuScreen')
+
+
+
+<MenuScreen>:
+    name:'menuScreen'
+    MDBoxLayout:
+        orientation: 'vertical'
+        MDTopAppBar:
+            id: topBar
+            left_action_items:
+                [
+                ['logout', lambda x: app.root.change_screen_to_prev(), 'Выйти'],
+                ]
+        InnerLayout:
+            orientation: 'vertical'
+
+            MDRectangleFlatIconButton: 
+                size_hint: 1, .2
+                text: 'Симптомы'
+                icon: 'book-open-blank-variant'
+                icon_size: '30dp'
+                font_size: '30dp'
+                on_release:
+                    app.root.change_screen('symptomsScreen')
+            
+            MDRectangleFlatIconButton:
+                size_hint: 1, .2
+                text: 'Ключевые слова'
+                icon: 'script-text-key'
+                icon_size: '30dp'
+                font_size: '30dp'
+                on_release:       
+                    app.root.change_screen('keywordsScreen')
+
+            MDRectangleFlatIconButton:
+                size_hint: 1, .2
+                text: 'Пользователи'
+                icon: 'account-multiple'
+                icon_size: '30dp'
+                font_size: '30dp'
+                on_release:
+                    app.root.change_screen('usersScreen')
+        
+<FilterMenuHeader>
+    spacing: "4dp"
+    padding: "4dp"
+    adaptive_height: True
+
+    MDIconButton:
+        icon: "filter"
+        pos_hint: {"top": 1}
+
+    MDLabel:
+        text: "Фильтр:"
+        adaptive_size: True
+        pos_hint: {"center_y": .5}
+
+<YesNoMenuHeader> 
+    # spacing: '10dp'
+    padding: "10dp", "10dp", "10dp", "14dp"
+    adaptive_height: True
+    MDTextField:
+        id: searchField
+        text: ''
+        on_text: root.search(self.text)
+        size_hint: None, 0
+        width: '184dp'
+    MDIconButton:
+        icon: "magnify"
+        pos_hint: {'x': .9, "top": 1}
+
+<SymptomsScreen>:
+    name: 'symptomsScreen'
+    MDBoxLayout:
+        orientation: 'vertical'
+        MDTopAppBar:
+            id: topBar
+            left_action_items:
+                [
+                ['arrow-left', lambda x: app.root.change_screen_to_prev(), 'Назад'],
+                ]
+            right_action_items:
+                [
+                ['plus-circle', lambda x: root.add_symptom(), 'Добавить'],
+                ['help', lambda x: root.dialog_help(), 'Помощь'],
+                ]
+            
+        MDBoxLayout:
+            padding: 10
+            size_hint_y: 1
+            id: table_place 
+
+        InnerLayout:
+            adaptive_height: True
+            orientation: 'horizontal'
+            id: bottomBar
+            MDTextField:
+                id: searchField
+                on_text: root.search(self.text)
+                hint_text: "Поиск"
+                icon_right: "magnify"
+                mode: "round"
+
+            MDFillRoundFlatIconButton:
+                id: filterButton
+                icon: "filter"
+                text: "Фильтр"
+                # pos_hint: {"center_x": .5, "center_y": .5}
+                on_release: root.menu.open()       
+
+<IconListItem>
+    IconLeftWidget:
+        icon: root.icon
+
+<SymptomAddEditScreen>:
+    name: 'symptomAddEditScreen'
+    MDBoxLayout:
+        pos_hint: {"top": 1}
+        adaptive_height: True
+        orientation: 'vertical'
+        MDTopAppBar:
+            id: topBar
+            # title: root.symptom_name
+            left_action_items:
+                [
+                ['arrow-left', lambda x: app.root.change_screen_to_prev(), 'Назад'],
+                ]
+
+            right_action_items:
+                [
+                ['microphone-outline', lambda x: root.voice_input(), 'Включить голосовой ввод'],
+                ['content-save', lambda x: root.save_then_quit(), 'Сохранить и выйти'],
+                ['content-save-plus', lambda x: root.save_then_add(), 'Сохранить и добавить еще'],
+                ]
+
+        InnerLayout:    
+            pos_hint: {"top": 1}
+            adaptive_height: True
+
+            orientation: 'horizontal'
+            MDTextField:
+                size_hint_x: 1
+                hint_text: "Название"
+                text: root.symptom_name
+                on_text: root.symptom_name = self.text
+                # max_text_length: 30
+
+            MDTextField:
+                size_hint_x: .2
+                hint_text: "Стр."
+                text: root.symptom_page
+                on_text: root.symptom_page = self.text
+                # max_text_length: 3
+
+        InnerLayout:
+            # adaptive_height: True
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: dp(300)
+            MDTextField:
+                size_hint: 1, 1
+                multiline: True
+                hint_text: "Описание"
+                text: root.symptom_description
+                on_text: root.symptom_description = self.text
+                # max_text_length: 300
+        
+        MDBoxLayout:
+            # adaptive_height: True
+            orientation: 'vertical'
+            padding: 10
+            size_hint_y: None
+            height: dp(100)
+
+            MDLabel:
+                text: "Ссылки на симптомы"
+                halign: "left"
+                theme_text_color: "Hint"
+
+            InnerLayout:
+                padding: 0
+                size_hint_y: 1
+
+                MDFillRoundFlatIconButton:
+                    size_hint_y: 1
+                    size_hint_x: 1
+                    id: yesButton
+                    icon: "check-circle-outline"
+                    text: root.symptom_yes_name
+                    on_release: 
+                        root.prepare_menu_yes(),
+                        root.yesMenu.open()
+
+                MDFillRoundFlatIconButton:
+                    size_hint_y: 1
+                    size_hint_x: 1
+                    id: noButton
+                    icon: "cancel"
+                    text: root.symptom_no_name
+                    on_release: 
+                        root.prepare_menu_no(),
+                        root.noMenu.open()
+
+        # Надо будет парсить сюда ключевые слова, собирать их в строку из списка с разделителем ',<SPACE>', обратно парсить через запятую и каждую запись через strip() лишать пробелов и to_lower() всем тоже делать
+        # Еще можно выделять те ключевые слова, что есть в базе зеленым, а новые, которые добавятся после добавления записи выделять желтым
+        InnerLayout:
+            adaptive_height: True
+            MDTextField:
+                id: keywordsInput
+                size_hint_x: 1
+                hint_text: "Ключевые слова"
+                text: root.symptom_keywords_string
+                helper_text: "Вводите через запятую (Можно с пробелами)"
+                helper_text_mode: "on_focus"
+                on_text: root.keywords_enter(self.text)
+
+<AddEditKeywordDialog_Content>
+    orientation: "vertical"
+    spacing: "12dp"
+    size_hint_y: None
+    adaptive_height: True
+    # height: "50dp"
+
+    MDTextField:
+        id: wordField
+        hint_text: "Слово"
+
+<KeywordsScreen>:
+    name: 'keywordsScreen'
+    MDBoxLayout:
+        orientation: 'vertical'
+        MDTopAppBar:
+            id: topBar
+            left_action_items:
+                [
+                ['arrow-left', lambda x: app.root.change_screen_to_prev(), 'Назад'],
+                ]
+            right_action_items:
+                [
+                ['plus-circle', lambda x: root.dialog_add_keyword(), 'Добавить'],
+                ['help', lambda x: root.dialog_help(), 'Помощь'],
+                ]
+            
+        MDBoxLayout:
+            padding: 10
+            size_hint_y: 1
+            id: table_place 
+
+        InnerLayout:
+            adaptive_height: True
+            orientation: 'horizontal'
+            id: bottomBar
+            MDTextField:
+                id: searchField
+                on_text: root.search(self.text)
+                hint_text: "Поиск"
+                icon_right: "magnify"
+                mode: "round"        
+
+<AddEditUserDialog_Content>
+    orientation: "vertical"
+    spacing: "2dp"
+    size_hint_y: None
+    height: '110dp'
+
+    MDTextField:
+        id: loginField
+        hint_text: "Логин"
+
+    MDTextField:
+        id: passwordField
+        hint_text: "Пароль"
+
+<UsersScreen>:
+    name: 'usersScreen'
+    MDBoxLayout:
+        orientation: 'vertical'
+        MDTopAppBar:
+            id: topBar
+            left_action_items:
+                [
+                ['arrow-left', lambda x: app.root.change_screen_to_prev(), 'Назад'],
+                ]
+            right_action_items:
+                [
+                ['plus-circle', lambda x: root.dialog_add_user(), 'Добавить'],
+                ['help', lambda x: root.dialog_help(), 'Помощь'],
+                ]
+            
+        MDBoxLayout:
+            padding: 10
+            size_hint_y: 1
+            id: table_place 
+
+        InnerLayout:
+            # size_hint_y: None
+            adaptive_height: True
+            orientation: 'horizontal'
+            id: bottomBar
+            MDTextField:
+                id: searchField
+                on_text: root.search(self.text)
+                hint_text: "Поиск"
+                icon_right: "magnify"
+                mode: "round"
+        

@@ -1,0 +1,8 @@
+{
+      "format": 8,
+      "channels": 1,
+      "rate": 16000,
+      "frames_per_buffer": 1024,
+      "sample_width": 2,
+      "max_temp_dir_size": 3000001
+}

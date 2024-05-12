@@ -1,7 +1,7 @@
 {
-  "username": "postgres",
-  "password": "password",
-  "host": "localhost",
-  "port": "5432",
-  "dbname": "HomeDoctor"
+	"username": "postgres",
+	"password": "123123",
+	"host": "localhost",
+	"port": "5432",
+	"dbname": "homedoc"
 }

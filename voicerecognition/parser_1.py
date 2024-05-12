@@ -78,12 +78,12 @@ def parseHomeDoc(input_string):
 
     phrasesTrans = [
         "symptom",
-        "diagnoz",
-        "Ysymptom",
-        "Nsymptom",
+        "diagnosis",
+        "yes",
+        "no",
         "page",
-        "descript",
-        "keyword",
+        "description",
+        "keywords",
         "end",
     ]
     current_dict = []
@@ -134,4 +134,4 @@ input_string = "симптом идет кровь из носа да симпт
 
 # Вызов функции
 output_json = parseHomeDoc(input_string)
-# print(output_json)
+print(output_json)
