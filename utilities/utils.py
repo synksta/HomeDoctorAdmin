@@ -1,5 +1,5 @@
 import os
-import glob
+import json
 
 
 # Returns total size of files in the directory [bytes]
@@ -25,3 +25,38 @@ def get_sorted_list_of_files_by_date(path):
             key=os.path.getmtime,
         )
     return result
+
+
+def correct_file_extension(file_name, extension):
+
+    if extension.count(".") > 1 or extension[0] != ".":
+        extension.replace(".", "")
+        extension = "." + extension
+
+    if file_name.count(extension) > 0 or file_name.count(".") > 0:
+        extension.replace(extension, "")
+        file_name.replace(".", "")
+
+    file_name += extension
+
+    return file_name
+
+
+def sync_dict_with_json(dictionary, file_name, root_dir="./"):
+
+    file_name = correct_file_extension(file_name, "json")
+
+    write = not os.path.exists(f"{root_dir}{file_name}")
+    print(f"write: {write}")
+    if not write:
+        with open(f"{root_dir}{file_name}", "r") as settings_file:
+            user_settings: dict = json.load(settings_file)
+            for key in list(dictionary.keys()):
+                if key in user_settings:
+                    dictionary[key] = user_settings[key]
+            write = len(list(user_settings.keys())) != (list(dictionary.keys()))
+    if write:
+        with open(f"{root_dir}{file_name}", "w") as settings_file:
+            settings_file.write(json.dumps(obj=dictionary, indent=len(dictionary)))
+
+    return dictionary
