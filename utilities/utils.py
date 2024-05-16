@@ -27,17 +27,13 @@ def get_sorted_list_of_files_by_date(path):
     return result
 
 
-def correct_file_extension(file_name, extension):
+def correct_file_extension(file_name: str, extension: str):
 
-    if extension.count(".") > 1 or extension[0] != ".":
-        extension.replace(".", "")
-        extension = "." + extension
+    file_name = list(filter(lambda word: len(word) > 0, file_name.split(".")))[0]
+    extension = extension.replace(".", "")
 
-    if file_name.count(extension) > 0 or file_name.count(".") > 0:
-        extension.replace(extension, "")
-        file_name.replace(".", "")
-
-    file_name += extension
+    file_name = file_name.replace(extension, "")
+    file_name += f".{extension}"
 
     return file_name
 
@@ -57,6 +53,8 @@ def sync_dict_with_json(dictionary, file_name, root_dir="./"):
             write = len(list(user_settings.keys())) != (list(dictionary.keys()))
     if write:
         with open(f"{root_dir}{file_name}", "w") as settings_file:
-            settings_file.write(json.dumps(obj=dictionary, indent=len(dictionary)))
+            settings_file.write(
+                json.dumps(obj=dictionary, indent=len(dictionary), ensure_ascii=False)
+            )
 
     return dictionary
