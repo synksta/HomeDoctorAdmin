@@ -1,7 +1,4 @@
 # from app import appInstance
-
-import json  # убрать в модуль
-
 import re
 
 from kivymd.uix.screen import Screen

@@ -1,5 +1,3 @@
-import json
-
 from utilities import utils
 
 
@@ -26,9 +24,6 @@ def get_symptom_data(text):
 
     root_dir = "./voicerecognition/"
     trigger_phrases_file_name = "symptom_attributes_trigger_phrases.json"
-
-    result = ""
-    result_dictionary = {}
 
     marker = "@"
 
@@ -82,13 +77,13 @@ def get_symptom_data(text):
         trigger_phrases[key] = f"{marker}{phrase}"
 
     print(text_word_list)
+    #
     text_word_list = list(filter(lambda word: len(word) > 0, text_word_list))
     print(text_word_list)
 
-    # fix this bullshit - similar words are disappeating in the loop below!!!
     current_attribute = ""
     for word in text_word_list:
-        if word in trigger_phrases.values():
+        if marker in word and word in trigger_phrases.values():
             # Clean the phrase to ignore its atribute it in future iterations
             current_attribute = key_by_val(trigger_phrases, word)
             trigger_phrases[current_attribute] = ""
@@ -113,12 +108,13 @@ def get_symptom_data(text):
         )
 
     print(trigger_phrases)
+    return trigger_phrases
 
 
 # Example
 
 if __name__ == "__main__":
-    input_string = "еброчка описание бебра название эээ kjhkjh kj страница два да ссылка прикол нет ссылка нет да ссылка приколk ключевые    слова hjk hbh jkj"
+    input_string = "еброчка описание бебра название эээ kjhkjh kj страница два да ссылка прикол нет ссылка нет да ссылка прикол ключевые    слова hjk hbh jkj"
     output_json = get_symptom_data(input_string)
     print(output_json)
     # input_string = "двадцать слово пять пять"

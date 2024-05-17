@@ -1,7 +1,6 @@
 import os
 import threading
 import time
-import json
 import pyaudio
 import wave
 from utilities import utils
@@ -24,21 +23,6 @@ settings = {
     # Temporary files directory size in bytes
     "max_temp_dir_size": 3000000,
 }
-
-# func that loads a json based on a  dict and checks for its fullness
-
-# write = not os.path.exists(f"{root_dir}{settings_file_name}")
-# print(f"write: {write}")
-# if not write:
-#     with open(f"{root_dir}{settings_file_name}", "r") as settings_file:
-#         user_settings: dict = json.load(settings_file)
-#         for key in list(settings.keys()):
-#             if key in user_settings:
-#                 settings[key] = user_settings[key]
-#         write = len(list(user_settings.keys())) != (list(settings.keys()))
-# if write:
-#     with open(f"{root_dir}{settings_file_name}", "w") as settings_file:
-#         settings_file.write(json.dumps(obj=settings, indent=len(settings)))
 
 settings = utils.sync_dict_with_json(settings, settings_file_name, root_dir)
 
@@ -132,30 +116,3 @@ def stop_and_get_path():
     save.close()
 
     return path
-
-
-# ready: bool
-
-# Returns a wave file if the record was done and None if not
-# def toggle():
-#     global ready
-#     ready = not (ready) if ready is not None else True
-
-#     result = None
-
-#     if ready:
-#         start()
-#     else:
-#         result = stop_and_get_wav()
-
-#     return result
-
-
-# def test():
-#     toggle()
-#     time.sleep(5)
-#     toggle()
-
-
-# if __name__ == "__main__":
-#     test()
