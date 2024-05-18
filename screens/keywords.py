@@ -10,7 +10,7 @@ from kivymd.uix.button import MDRectangleFlatButton
 from kivymd.uix.button import MDRaisedButton
 from kivymd.uix.dialog import MDDialog
 
-from utilities import dbcontrol
+from utilities import database
 from utilities.kivyutils import *
 
 
@@ -54,11 +54,10 @@ class KeywordsScreen(Screen):
         self.dialog.open()
 
     def add_keyword(self, obj):
-        new_word = self.dialog.content_cls.ids.wordField.text.strip()
-        if len(new_word) > 0:
-            dbcontrol.open_session()
-            dbcontrol.insert_keyword(new_word)
-            dbcontrol.close_session()
+        word = self.dialog.content_cls.ids.wordField.text.strip()
+        if len(word) > 0:
+            with database.session_manager():
+                database.insert_keyword(word=word)
             self.dialog.dismiss()
             self.dialog = None
             self.load_table()
@@ -84,9 +83,8 @@ class KeywordsScreen(Screen):
             self.dialog.dismiss()
             self.dialog = None
         if not self.dialog and id:
-            dbcontrol.open_session()
-            word = dbcontrol.get_keyword(id).word
-            dbcontrol.close_session()
+            with database.session_manager():
+                word = database.get_keyword_by_id(id).word
             self.dialog = MDDialog(
                 title=f'Выбрано слово "{word}"',
                 text=f"Выберите действие",
@@ -121,17 +119,17 @@ class KeywordsScreen(Screen):
                     ),
                 ],
             )
-        dbcontrol.open_session()
-        self.dialog.content_cls.ids.wordField.text = dbcontrol.get_keyword(id).word
-        dbcontrol.close_session()
+        with database.session_manager():
+            self.dialog.content_cls.ids.wordField.text = database.select_keyword(
+                id=id
+            ).word
         self.dialog.open()
 
     def edit_keyword(self, id):
         new_word = self.dialog.content_cls.ids.wordField.text.strip()
         if len(new_word) > 0:
-            dbcontrol.open_session()
-            dbcontrol.update_keyword(id, new_word)
-            dbcontrol.close_session()
+            with database.session_manager():
+                database.update_keyword(id=id, new_word=new_word)
             self.dialog.dismiss()
             self.dialog = None
             self.load_table()
@@ -160,9 +158,8 @@ class KeywordsScreen(Screen):
             self.dialog.open()
 
     def delete_keyword(self, id):
-        dbcontrol.open_session()
-        dbcontrol.delete_keyword(id)
-        dbcontrol.close_session()
+        with database.session_manager():
+            database.delete_keyword(id=id)
         # uncheck_all_rows(self.wordsTable)
         self.load_table()
         self.dialog.dismiss()
@@ -189,10 +186,9 @@ class KeywordsScreen(Screen):
 
     def load_table(self):
         self.new_row_data = []
-        dbcontrol.open_session()
-        for keyword in dbcontrol.read_keywords():
-            self.new_row_data.append(keyword.tuple())
-        dbcontrol.close_session()
+        with database.session_manager():
+            for keyword in database.select_keywords():
+                self.new_row_data.append(keyword.tuple())
 
         if self.wordsTable == None:
             self.wordsTable = MDDataTable(

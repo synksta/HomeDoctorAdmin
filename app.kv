@@ -1,7 +1,7 @@
 #:import utils kivy.utils
 
 Manager:
-    # LoginScreen:
+    LoginScreen:
     MenuScreen:
     SymptomsScreen:
     SymptomAddEditScreen:
@@ -273,7 +273,7 @@ Manager:
                     text: root.symptom_yes_name
                     on_release: 
                         root.prepare_menu_yes(),
-                        root.yesMenu.open()
+                        root.yes_menu.open()
 
                 MDFillRoundFlatIconButton:
                     size_hint_y: 1
@@ -283,7 +283,7 @@ Manager:
                     text: root.symptom_no_name
                     on_release: 
                         root.prepare_menu_no(),
-                        root.noMenu.open()
+                        root.no_menu.open()
 
         # Надо будет парсить сюда ключевые слова, собирать их в строку из списка с разделителем ',<SPACE>', обратно парсить через запятую и каждую запись через strip() лишать пробелов и to_lower() всем тоже делать
         # Еще можно выделять те ключевые слова, что есть в базе зеленым, а новые, которые добавятся после добавления записи выделять желтым

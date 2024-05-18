@@ -10,7 +10,7 @@ from kivymd.uix.button import MDRectangleFlatButton
 
 from kivy.clock import Clock
 
-from utilities import dbcontrol
+from utilities import database
 from utilities.kivyutils import *
 
 
@@ -18,38 +18,20 @@ class SymptomsScreen(Screen):
     dialog = None
 
     def on_kv_post(self, base_widget):
-
         self.symptomsTable = None
-        filter_menu_items = [
-            {
-                "text": "ID",
-                "on_release": lambda x=["0", "ID"]: self.menu_callback(x),
-            },
-            {
-                "text": "Название",
-                "on_release": lambda x=["1", "Название"]: self.menu_callback(x),
-            },
-            {
-                "text": "Да",
-                "on_release": lambda x=["2", "Да"]: self.menu_callback(x),
-            },
-            {
-                "text": "Нет",
-                "on_release": lambda x=["3", "Нет"]: self.menu_callback(x),
-            },
-            {
-                "text": "Страница",
-                "on_release": lambda x=["4", "Страница"]: self.menu_callback(x),
-            },
-        ]
-
+        filters = ["ID", "Название", "Да", "Нет", "Страница"]
         self.filter = 1
-        self.ids.filterButton.text = "Название"
-
+        self.ids.filterButton.text = filters[self.filter][0]
         self.menu = MDDropdownMenu(
             header_cls=FilterMenuHeader(),
             caller=self.ids.filterButton,
-            items=filter_menu_items,
+            items=[
+                {
+                    "text": name,
+                    "on_release": lambda x=(idx, name): self.menu_callback(x),
+                }
+                for idx, name in enumerate(filters)
+            ],
         )
 
     def search(self, text):
@@ -112,9 +94,9 @@ class SymptomsScreen(Screen):
         self.dialog = None
 
     def delete_symptom(self, id):
-        dbcontrol.open_session()
-        dbcontrol.delete_symptom(id)
-        dbcontrol.close_session()
+        with database.session_manager():
+            database.delete_symptom(id=id)
+
         self.load_table()
         self.dialog.dismiss()
         self.dialog = None
@@ -163,34 +145,30 @@ class SymptomsScreen(Screen):
         if self.dialog:
             self.dialog = None
         if not self.dialog and id:
-
-            dbcontrol.open_session()
-            name = dbcontrol.get_symptom(id).name
-            dbcontrol.close_session()
-
-            self.dialog = MDDialog(
-                title=f'Выбран симптом "{name}"',
-                text=f"Выберите действие",
-                type="custom",
-                buttons=[
-                    MDFlatButton(text="ОТМЕНА", on_release=self.dialog_dismiss),
-                    MDRectangleFlatButton(
-                        text="УДАЛИТЬ",
-                        on_release=lambda x: self.dialog_delete_symptom(id),
-                    ),
-                    MDRaisedButton(
-                        text="ИЗМЕНИТЬ", on_release=lambda x: self.edit_symptom(id)
-                    ),
-                ],
-            )
-            self.dialog.open()
+            with database.session_manager():
+                name = database.select_symptom(id=id).name
+                self.dialog = MDDialog(
+                    title=f'Выбран симптом "{name}"',
+                    text=f"Выберите действие",
+                    type="custom",
+                    buttons=[
+                        MDFlatButton(text="ОТМЕНА", on_release=self.dialog_dismiss),
+                        MDRectangleFlatButton(
+                            text="УДАЛИТЬ",
+                            on_release=lambda x: self.dialog_delete_symptom(id),
+                        ),
+                        MDRaisedButton(
+                            text="ИЗМЕНИТЬ", on_release=lambda x: self.edit_symptom(id)
+                        ),
+                    ],
+                )
+                self.dialog.open()
 
     def load_table(self):
         self.new_row_data = []
-        dbcontrol.open_session()
-        for symptom in dbcontrol.read_symptoms():
-            self.new_row_data.append(symptom.tuple())
-        dbcontrol.close_session()
+        with database.session_manager():
+            for symptom in database.select_symptoms():
+                self.new_row_data.append(symptom.tuple())
 
         if self.symptomsTable == None:
             self.symptomsTable = MDDataTable(

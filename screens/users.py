@@ -12,7 +12,7 @@ from kivymd.uix.button import MDRectangleFlatButton
 from kivymd.uix.button import MDRaisedButton
 from kivymd.uix.dialog import MDDialog
 
-from utilities import dbcontrol
+from utilities import database
 from utilities.kivyutils import *
 
 
@@ -58,9 +58,8 @@ class UsersScreen(Screen):
         name = self.dialog.content_cls.ids.loginField.text.strip()
         password = self.dialog.content_cls.ids.passwordField.text.strip()
         if len(name) > 0 and len(password) > 0:
-            dbcontrol.open_session()
-            dbcontrol.insert_user(name, password)
-            dbcontrol.close_session()
+            with database.session_manager():
+                database.insert_user(name=name, password=password)
             self.dialog.dismiss()
             self.dialog = None
             self.load_table()
@@ -127,19 +126,19 @@ class UsersScreen(Screen):
                 ],
             )
         self.dialog.content_cls.ids.wordField.hint_text = "Пароль"
-        dbcontrol.open_session()
-        self.dialog.content_cls.ids.wordField.text = dbcontrol.get_user(name).password
-        dbcontrol.close_session()
+        with database.session_manager():
+            self.dialog.content_cls.ids.wordField.text = database.get_user_by_name(
+                name
+            ).password
         self.dialog.open()
 
     def edit_user(self, name):
 
         new_password = self.dialog.content_cls.ids.wordField.text.strip()
         # print(self.dialog.content_cls.ids.wordField.text)
-        if len(new_password) > 0:
-            dbcontrol.open_session()
-            dbcontrol.update_user_password(name, new_password)
-            dbcontrol.close_session()
+        if new_password:
+            with database.session_manager():
+                database.update_user(name=name, new_password=new_password)
             self.dialog.dismiss()
             self.dialog = None
             self.load_table()
@@ -168,10 +167,8 @@ class UsersScreen(Screen):
             self.dialog.open()
 
     def delete_user(self, name):
-        dbcontrol.open_session()
-        dbcontrol.delete_user(name)
-        dbcontrol.close_session()
-        # uncheck_all_rows(self.wordsTable)
+        with database.session_manager():
+            database.delete_user(name)
         self.load_table()
         self.dialog.dismiss()
         self.dialog = None
@@ -194,10 +191,9 @@ class UsersScreen(Screen):
     def load_table(self):
 
         self.new_row_data = []
-        dbcontrol.open_session()
-        for user in dbcontrol.read_users():
-            self.new_row_data.append(user.tuple())
-        dbcontrol.close_session()
+        with database.session_manager():
+            for user in database.select_users():
+                self.new_row_data.append(user.tuple())
 
         if self.usersTable == None:
             self.usersTable = MDDataTable(

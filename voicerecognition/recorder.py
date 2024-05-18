@@ -1,3 +1,8 @@
+"""
+This module is responsible for recording audio from a microphone and saving it as a temporary .wav file.
+The file is then deleted once the recording is stopped.
+"""
+
 import os
 import threading
 import time
@@ -39,15 +44,26 @@ recording: bool
 record_thread: threading.Thread
 
 
-def start():
+def start() -> None:
+    """
+    Starts recording audio from a microphone.
+
+    This function initializes a PyAudio object, sets the sample width
+    of the recording format (based on the current PyAudio object),
+    opens an audio stream using the current settings, and starts a
+    separate thread for recording the audio.
+    """
     print("start!")
 
+    # Initialize PyAudio object
     global audio
     audio = pyaudio.PyAudio()
 
+    # Set sample width of recording format based on current PyAudio object
     global settings
     settings["sample_width"] = audio.get_sample_size(settings["format"])
 
+    # Open audio stream using current settings
     global stream
     stream = audio.open(
         format=settings["format"],
@@ -57,23 +73,50 @@ def start():
         frames_per_buffer=settings["frames_per_buffer"],
     )
 
+    # Start separate thread for recording audio
     global record_thread
     record_thread = threading.Thread(target=record, name="trd-record")
     record_thread.start()
 
 
-def record():
+def record() -> None:
+    """
+    Records audio from a microphone in a separate thread.
+
+    This function is run in a separate thread and is responsible for recording audio from the microphone.
+    It uses the global "recording" flag to determine when to stop recording. The recorded audio is stored in the
+    global "chunks" list as a series of bytes objects, where each bytes object represents a single frame of audio.
+    """
     global recording
     recording = True
 
     global chunks
     chunks = []
+
+    # Read audio frames from the microphone and store them in the chunks list
     while recording:
+        # Read the next frame of audio from the microphone
         data = stream.read(settings["frames_per_buffer"])
+        # Append the read frame to the chunks list
         chunks.append(data)
 
 
-def stop_and_get_path():
+def stop_and_get_path() -> str:
+    """
+    Stops recording audio from a microphone and returns the path to the temporary .wav file.
+
+    This function is responsible for:
+    1. Stopping the recording thread.
+    2. Stopping the audio stream and closing the audio interface.
+    3. Checking if there is enough space in the temporary directory.
+    4. If there is not enough space, remove the oldest files until there is enough space.
+    5. Create a new file with a unique name based on current date and time.
+    6. Save the recorded audio to the new file.
+    7. Return the path to the new file.
+
+    The temporary directory is specified in the settings dictionary and is default to "temp/".
+    The maximum size of the temporary directory is specified in the settings dictionary and is default to 500MB.
+    """
     time.sleep(0.5)
 
     global recording
@@ -94,13 +137,16 @@ def stop_and_get_path():
         temp_dir_size = utils.get_dir_size(path)
         # And free it if needed
         if settings["max_temp_dir_size"] < temp_dir_size:
+            # Get a list of files in the temporary directory, sorted by date
             files_list = utils.get_sorted_list_of_files_by_date(path)
             removed = ""
             while settings["max_temp_dir_size"] < temp_dir_size and len(files_list) > 0:
-                print(f"{files_list[0]}")
+                # Remove the oldest file until there is enough space
+                removed += f"{files_list[0]} "
                 temp_dir_size -= os.path.getsize(files_list[0])
                 os.remove(files_list[0])
                 files_list.pop(0)
+            print(f"Removed {removed} to free space")
     else:
         # Create the directory for temporary files
         os.makedirs(path)

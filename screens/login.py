@@ -3,7 +3,7 @@
 from kivymd.uix.screen import Screen
 from kivy.properties import StringProperty
 
-from utilities import dbcontrol
+from utilities import database
 from utilities.kivyutils import CustomSnackbar
 
 
@@ -24,33 +24,22 @@ class LoginScreen(Screen):
         name = self.ids.nameField.text.strip()
         password = self.ids.passwordField.text.strip()
 
-        if len(name) > 0 and len(password) > 0:
+        if not (name and password):
+            if not name:
+                self.ids.nameField.hint_text_color_normal = "red"
+            if not password:
+                self.ids.passwordField.hint_text_color_normal = "red"
+            return
 
-            dbcontrol.open_session()
-            current_user = None
-            for user in dbcontrol.read_users():
-                if name == user.name:
-                    current_user = user
-                    break
-            if current_user:
-                if password == current_user.password:
-                    self.manager.change_screen("menuScreen")
-                else:
-                    CustomSnackbar(
-                        text="Пароль не подходит!",
-                        icon="alert-box",
-                        snackbar_x="10dp",
-                        snackbar_y="10dp",
-                    ).open()
+        with database.session_manager():
+            user = database.select_user(name=name)
+
+            if user and user.password == password:
+                self.manager.change_screen("menuScreen")
             else:
                 CustomSnackbar(
-                    text="Такого пользователя нет!",
+                    text="Неверный логин или пароль!",
                     icon="alert-box",
                     snackbar_x="10dp",
                     snackbar_y="10dp",
                 ).open()
-        else:
-            if len(name) == 0:
-                self.ids.nameField.hint_text_color_normal = "red"
-            if len(password) == 0:
-                self.ids.passwordField.hint_text_color_normal = "red"
