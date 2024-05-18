@@ -4,6 +4,8 @@ Database maintenance application
 
 Launch the venv before debugging.
 
+!!! Database backup is in ./connection !!!
+
 !!! Linux users attention !!!
 
 PyAudio won't install without packages:
