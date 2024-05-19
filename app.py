@@ -14,7 +14,7 @@ from kivymd.app import MDApp
 
 
 class App(MDApp):
-    appname = "ДД Админ"
+    appname = "Home Doctor - Admin"
 
     Window.size = (800, 700)
 
@@ -26,13 +26,15 @@ class App(MDApp):
         self.theme_cls.theme_style = "Dark"
         self.theme_cls.primary_palette = "Orange"
         self.theme_cls.accent_palette = "DeepPurple"
-        return Builder.load_file("app.kv")
-
-
-appInstance = App()
+        #
+        # Commented the build thing because it's not needed
+        # in case of kv file has the same name as the class
+        #
+        # return Builder.load_file("app.kv")
 
 
 def main():
+    appInstance = App()
     appInstance.run()
 
 

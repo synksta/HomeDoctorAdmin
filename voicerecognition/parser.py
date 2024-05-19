@@ -24,7 +24,7 @@ key_by_val = lambda dict, val: [key for key in dict if dict[key] == val][0]
 
 
 # Returns json formatted string with 'symptom' entity attributes
-def get_symptom_data(text):
+def parse_symptom_data(text):
     """
     A function that processes text input to extract specific attributes based on trigger phrases.
 
@@ -46,8 +46,8 @@ def get_symptom_data(text):
         "name": "название",
         "description": "описание",
         "page": "страница",
-        "yes": "дассылка",
-        "no": "нетссылка",
+        "yes_name": "ссылкада",
+        "no_name": "ссылканет",
         "keywords": "ключевыеслова",
     }
 
@@ -156,7 +156,7 @@ def get_symptom_data(text):
 
 if __name__ == "__main__":
     input_string = "еброчка описание бебра название эээ kjhkjh kj страница два asdad два фывф три фывфыв да ссылка прикол нет ссылка нет да ссылка прикол ключевые    слова hjk hbh jkj"
-    output_json = get_symptom_data(input_string)
+    output_json = parse_symptom_data(input_string)
     print(output_json)
     # input_string = "двадцать слово пять пять"
     # print(text_to_number(input_string))

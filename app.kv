@@ -1,8 +1,8 @@
 #:import utils kivy.utils
 
 Manager:
-    LoginScreen:
-    MenuScreen:
+    # LoginScreen:
+    # MenuScreen:
     SymptomsScreen:
     SymptomAddEditScreen:
     KeywordsScreen:
@@ -139,7 +139,7 @@ Manager:
         adaptive_size: True
         pos_hint: {"center_y": .5}
 
-<YesNoMenuHeader> 
+<LinksMenuHeader> 
     # spacing: '10dp'
     padding: "10dp", "10dp", "10dp", "14dp"
     adaptive_height: True
@@ -204,7 +204,7 @@ Manager:
         orientation: 'vertical'
         MDTopAppBar:
             id: topBar
-            # title: root.symptom_name
+            # title: root.f_name
             left_action_items:
                 [
                 ['arrow-left', lambda x: app.root.change_screen_to_prev(), 'Назад'],
@@ -225,15 +225,15 @@ Manager:
             MDTextField:
                 size_hint_x: 1
                 hint_text: "Название"
-                text: root.symptom_name
-                on_text: root.symptom_name = self.text
+                text: root.f_name
+                on_text: root.f_name = self.text
                 # max_text_length: 30
 
             MDTextField:
                 size_hint_x: .2
                 hint_text: "Стр."
-                text: root.symptom_page
-                on_text: root.symptom_page = self.text
+                text: root.f_page
+                on_text: root.f_page = self.text
                 # max_text_length: 3
 
         InnerLayout:
@@ -245,8 +245,8 @@ Manager:
                 size_hint: 1, 1
                 multiline: True
                 hint_text: "Описание"
-                text: root.symptom_description
-                on_text: root.symptom_description = self.text
+                text: root.f_description
+                on_text: root.f_description = self.text
                 # max_text_length: 300
         
         MDBoxLayout:
@@ -268,22 +268,26 @@ Manager:
                 MDFillRoundFlatIconButton:
                     size_hint_y: 1
                     size_hint_x: 1
-                    id: yesButton
+                    id: yesLinkMenuButton
                     icon: "check-circle-outline"
-                    text: root.symptom_yes_name
+                    text: root.f_yes_name
                     on_release: 
-                        root.prepare_menu_yes(),
-                        root.yes_menu.open()
+                        root.init_link_menu(self),
+                        
+                        # root.prepare_menu_yes(),
+                        # root.yes_menu.open()
 
                 MDFillRoundFlatIconButton:
                     size_hint_y: 1
                     size_hint_x: 1
-                    id: noButton
+                    id: noLinkMenuButton
                     icon: "cancel"
-                    text: root.symptom_no_name
+                    text: root.f_no_name
                     on_release: 
-                        root.prepare_menu_no(),
-                        root.no_menu.open()
+                        root.init_link_menu(self),
+                        
+                        # root.prepare_menu_no(),
+                        # root.no_menu.open()
 
         # Надо будет парсить сюда ключевые слова, собирать их в строку из списка с разделителем ',<SPACE>', обратно парсить через запятую и каждую запись через strip() лишать пробелов и to_lower() всем тоже делать
         # Еще можно выделять те ключевые слова, что есть в базе зеленым, а новые, которые добавятся после добавления записи выделять желтым
@@ -293,7 +297,7 @@ Manager:
                 id: keywordsInput
                 size_hint_x: 1
                 hint_text: "Ключевые слова"
-                text: root.symptom_keywords_string
+                text: root.f_keywords
                 helper_text: "Вводите через запятую (Можно с пробелами)"
                 helper_text_mode: "on_focus"
                 on_text: root.keywords_enter(self.text)

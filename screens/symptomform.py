@@ -12,106 +12,79 @@ from utilities import database
 
 from voicerecognition import recorder, speechtotext, parser
 
+thisScreen = None
 
-class YesNoMenuHeader(MDBoxLayout):
-    data = None
 
+class LinksMenuHeader(MDBoxLayout):
     def search(self, text):
-        if self.data == None:
-            self.data = self.parent.parent.items.copy()
-
-        if len(text) > 0:
-            res = list(
-                filter(
-                    lambda x: text.lower() in x.get("text").lower()
-                    or x.get("text") == "Очистить",
-                    self.data,
-                )
-            )
-            self.parent.parent.items = res
-        else:
-            self.parent.parent.items = self.data
-        self.parent.parent.set_menu_properties()
+        global thisScreen
+        if not thisScreen:
+            return
+        thisScreen.set_link_menu_items(filter_string=text)
 
 
 class SymptomAddEditScreen(Screen):
     dialog = None
 
-    symptom_id = 0
-    symptom_name = ObjectProperty("")
-    symptom_description = ObjectProperty("")
-    symptom_yes = None
-    symptom_yes_name = ObjectProperty("Выбрать")
-    symptom_no = None
-    symptom_no_name = ObjectProperty("Выбрать")
-    symptom_page = ObjectProperty("")
-    symptom_keywords_string = ObjectProperty("")
-    symptom_keywords = []
+    symptom: database.Symptom = None
+    yes: database.Symptom = None
+    no: database.Symptom = None
 
+    id = 0
+
+    f_name = ObjectProperty("")
+    f_description = ObjectProperty("")
+    f_yes_name = ObjectProperty("")
+    f_no_name = ObjectProperty("")
+    f_page = ObjectProperty("")
+    f_keywords = ObjectProperty("")
+
+    f_link_clean = "Выбрать"
+
+    keywords = []
     new_keywords = []
     all_keywords = []
 
     def on_pre_enter(self):
+        global thisScreen
+        thisScreen = self
         with database.session_manager():
             self.all_keywords = []
             for keyword in database.select_keywords():
                 self.all_keywords.append(keyword.word)
 
     def new_symptom(self):
-        self.symptom_id = 0
-        self.symptom_name = ""
-        self.symptom_description = ""
-        self.symptom_yes = None
-        self.symptom_yes_name = "Выбрать"
-        self.symptom_no = None
-        self.symptom_no_name = "Выбрать"
-        self.symptom_page = ""
-        self.symptom_keywords = []
-        self.symptom_keywords_string = ""
+        self.id = 0
+        self.f_name = ""
+        self.f_description = ""
+        self.yes = None
+        self.f_yes_name = self.f_link_clean
+        self.no = None
+        self.f_no_name = self.f_link_clean
+        self.f_page = ""
+        self.keywords = []
+        self.f_keywords = ""
         self.ids.keywordsInput.text = ""
         self.new_keywords = []
-        self.yes_menu_items = self.symptoms_yes_menu_gen()
-        self.no_menu_items = self.symptoms_no_menu_gen()
 
     def load_symptom(self, id):
-        database.session_open()
-        symptom = database.get_symptom_by_id(id)
+        with database.session_manager():
+            self.symptom = database.select_symptom(id=id)
 
-        self.symptom_id = symptom.id
+            self.yes = self.symptom.yes
+            self.no = self.symptom.no
 
-        self.symptom_name = symptom.name
-
-        if symptom.description:
-            self.symptom_description = symptom.description
-        else:
-            self.symptom_description = ""
-
-        if symptom.yes_obj:
-            self.symptom_yes = symptom.yes_obj
-            self.symptom_yes_name = symptom.yes_obj.name
-        else:
-            self.symptom_yes = None
-            self.symptom_yes_name = "Выбрать"
-
-        if symptom.no_obj:
-            self.symptom_no = symptom.no_obj
-            self.symptom_no_name = symptom.no_obj.name
-        else:
-            self.symptom_no = None
-            self.symptom_no_name = "Выбрать"
-
-        if symptom.page:
-            self.symptom_page = str(symptom.page)
-        else:
-            self.symptom_page = ""
-
-        self.symptom_keywords_string = database.keywords_string(symptom.keywords)
-        if self.symptom_keywords_string == "":
-            self.ids.keywordsInput.text = ""
-
-        self.symptom_keywords = []
-        for keyword in database.get_symptom_by_id(self.symptom_id).keywords:
-            self.symptom_keywords.append(keyword.word)
+            self.id = self.symptom.id
+            self.f_name = self.symptom.name
+            self.f_description = self.symptom.description or ""
+            self.f_yes_name = self.yes.name if self.yes else self.f_link_clean
+            self.f_no_name = self.no.name if self.no else self.f_link_clean
+            self.f_page = str(self.symptom.page) if self.symptom.page else ""
+            self.f_keywords = database.keywords_string(self.symptom.keywords)
+            self.ids.keywordsInput.text = self.f_keywords or ""
+            self.keywords = [
+                keyword.word for keyword in database.select_symptom(id=self.id).keywords
+            ]
 
     def save(self):
         if (
@@ -120,83 +93,69 @@ class SymptomAddEditScreen(Screen):
                     ""
                     or None
                     in [
-                        self.symptom_name,
-                        self.symptom_description,
-                        self.symptom_page,
-                        # self.symptom_no_obj,
-                        # self.symptom_yes_obj
+                        self.f_name,
+                        self.f_description,
+                        self.f_page,
                     ]
                 )
             )
-            and self.symptom_page.isdigit()
+            and self.f_page.isdigit()
         ):
             with database.session_manager():
 
-                if self.symptom_id == 0:
+                if self.id == 0:
                     print("save new")
                     database.insert_symptom(
-                        name=self.symptom_name.strip(),
-                        description=self.symptom_description.strip(),
-                        page=int(self.symptom_page.strip()),
+                        name=self.f_name.strip(),
+                        description=self.f_description.strip(),
+                        page=int(self.f_page.strip()),
                     )
 
-                    if self.symptom_no:
-                        database.select_symptom(name=self.symptom_name).no_id = (
-                            self.symptom_no.id
-                        )
+                    if self.no:
+                        database.select_symptom(name=self.f_name).no_id = self.no.id
 
-                    if self.symptom_yes:
-                        database.select_symptom(name=self.symptom_name).yes_id = (
-                            self.symptom_yes.id
-                        )
+                    if self.yes:
+                        database.select_symptom(name=self.f_name).yes_id = self.yes.id
 
                     new_keywords = [
-                        x for x in self.symptom_keywords if x not in self.all_keywords
+                        x for x in self.keywords if x not in self.all_keywords
                     ]
 
                     for keyword in new_keywords:
-                        database.insert_keyword(keyword)
+                        database.insert_keyword(word=keyword)
 
-                    for keyword in self.symptom_keywords:
+                    for keyword in self.keywords:
                         database.insert_symptom_keyword_mapping(
-                            database.select_symptom(name=self.symptom_name).id,
-                            database.select_keyword(word=keyword).id,
+                            symptom_id=database.select_symptom(name=self.f_name).id,
+                            keyword_id=database.select_keyword(word=keyword).id,
                         )
 
                 else:
                     database.update_symptom(
-                        self.symptom_id,
-                        self.symptom_name,
-                        self.symptom_description,
-                        int(self.symptom_page),
+                        id=self.id,
+                        new_name=self.f_name,
+                        new_description=self.f_description,
+                        new_page=int(self.f_page),
+                        new_yes_id=self.yes.id if self.yes else None,
+                        new_no_id=self.no.id if self.no else None,
                     )
 
-                    if self.symptom_no:
-                        database.select_symptom(name=self.symptom_name).no = (
-                            self.symptom_no.id
-                        )
-
-                    if self.symptom_yes:
-                        database.select_symptom(name=self.symptom_name).yes = (
-                            self.symptom_yes.id
-                        )
-
-                    print(f"Введенные ключи:\n{self.symptom_keywords}")
+                    print(f"Введенные ключи:\n{self.keywords}")
 
                     actual_keywords = []
-                    for keyword in database.select_symptom(id=self.symptom_id).keywords:
+                    for keyword in database.select_symptom(id=self.id).keywords:
                         actual_keywords.append(keyword.word)
 
                     print(f"Прошлые ключи:\n{actual_keywords}")
 
                     keywords_to_delete = [
-                        x for x in actual_keywords if x not in self.symptom_keywords
+                        x for x in actual_keywords if x not in self.keywords
                     ]
 
                     print(f"Отвязанные ключи:\n{keywords_to_delete}")
 
                     new_keywords = [
-                        x for x in self.symptom_keywords if x not in self.all_keywords
+                        x for x in self.keywords if x not in self.all_keywords
                     ]
 
                     for keyword in new_keywords:
@@ -205,12 +164,12 @@ class SymptomAddEditScreen(Screen):
                     print(f"Новые ключи:\n{new_keywords}")
 
                     new_to_symptom_keywords = [
-                        x for x in self.symptom_keywords if x not in actual_keywords
+                        x for x in self.keywords if x not in actual_keywords
                     ]
 
                     for keyword in new_to_symptom_keywords:
                         database.insert_symptom_keyword_mapping(
-                            symptom_id=self.symptom_id,
+                            symptom_id=self.id,
                             keyword_id=database.select_keyword(word=keyword).id,
                         )
 
@@ -219,7 +178,7 @@ class SymptomAddEditScreen(Screen):
                     if len(keywords_to_delete) > 0:
                         for keyword in keywords_to_delete:
                             database.delete_symptom_keyword_mapping(
-                                symptom_id=self.symptom_id,
+                                symptom_id=self.id,
                                 keyword_id=database.select_keyword(word=keyword).id,
                             )
             return True
@@ -255,45 +214,69 @@ class SymptomAddEditScreen(Screen):
         else:
             path = recorder.stop_and_get_path()
             if path is not None:
+
                 text = speechtotext.get_text_from_speech(path=path)
                 print(text)
-                if text is not "":
-                    f = parser.get_symptom_data(text)
-                    if f:
-                        print(f)
-                        # data = json.load(f)
-                        # if data:
-                        #     self.symptom_name = (f"{data['name']}").capitalize()
-                        #     self.symptom_page = f"{data['page']}"
-                        #     self.symptom_description = (
-                        #         f"{data['description']}"
-                        #     ).capitalize()
-                        #     self.symptom_keywords_string = f"{data['keywords']}"
-                        #     if data["yes"]:
-                        #         database.session_open()
-                        #         symptom = database.get_symptom_by_name(data["yes"])
-                        #         database.session_close()
-                        #         if symptom:
-                        #             self.symptom_yes_obj = symptom
-                        #             self.symptom_yes_name = symptom.name
-                        #     if data["no"]:
-                        #         database.session_open()
-                        #         symptom = database.get_symptom_by_name(data["no"])
-                        #         database.session_close()
-                        #         if symptom:
-                        #             self.symptom_no_obj = symptom
-                        # self.symptom_no_name = symptom.name
+                if not text:
+                    return
 
-    #     global ready
+                symptom_data = parser.parse_symptom_data(text)
+                if not symptom_data:
+                    return
 
-    #     result = None
+                print(symptom_data)
 
-    #     if ready:
-    #         start()
-    #     else:
-    #         result = stop_and_get_wav()
+                self.f_name = (
+                    f"{symptom_data['name'].capitalize()}"
+                    if symptom_data["name"]
+                    else self.f_name
+                )
 
-    #     return result
+                self.f_page = (
+                    f"{symptom_data['page']}" if symptom_data["page"] else self.f_page
+                )
+
+                self.f_description = (
+                    f"{symptom_data['description'].capitalize()}"
+                    if symptom_data["description"]
+                    else self.f_description
+                )
+
+                if symptom_data["yes_name"]:
+                    with database.session_manager():
+                        potential_yes = database.select_symptoms(
+                            name=symptom_data["yes_name"]
+                        )
+                        symptom = potential_yes[0] if potential_yes else None
+                    if (
+                        symptom
+                        and ((symptom.id != self.symptom.id) if self.symptom else True)
+                        and ((symptom.id != self.yes.id) if self.yes else True)
+                        and ((symptom.id != self.no.id) if self.no else True)
+                    ):
+                        self.yes = symptom
+                        self.f_yes_name = symptom.name
+
+                if symptom_data["no_name"]:
+                    with database.session_manager():
+                        potential_no = database.select_symptoms(
+                            name=symptom_data["no_name"]
+                        )
+                        symptom = potential_no[0] if potential_no else None
+                    if (
+                        symptom
+                        and ((symptom.id != self.symptom.id) if self.symptom else True)
+                        and ((symptom.id != self.yes.id) if self.yes else True)
+                        and ((symptom.id != self.no.id) if self.no else True)
+                    ):
+                        self.no = symptom
+                        self.f_no_name = symptom.name
+
+                self.f_keywords = (
+                    f"{symptom_data['keywords']}"
+                    if symptom_data["keywords"]
+                    else self.f_keywords
+                )
 
     def save_then_quit(self):
         if self.save():
@@ -304,140 +287,104 @@ class SymptomAddEditScreen(Screen):
             # appInstance.change_title("Добавление симптома")
             self.new_symptom()
 
-    def symptoms_yes_menu_gen(self):
-        res = [
+    def clear_yes(self):
+        self.f_yes_name = self.f_link_clean
+        self.yes = None
+
+    def clear_no(self):
+        self.f_no_name = self.f_link_clean
+        self.no = None
+
+    def set_yes(self, symptom):
+        self.f_yes_name = symptom.name
+        self.yes = symptom
+
+    def set_no(self, symptom):
+        self.f_no_name = symptom.name
+        self.no = symptom
+
+    def set_link_menu_items(self, filter_string=None):
+        if not self.link_menu:
+            return
+        self.link_menu.items = [
             {
                 "viewclass": "IconListItem",
                 "icon": "broom",
                 "text": "Очистить",
-                "on_release": self.clear_yes_symptom,
+                "on_release": lambda: (
+                    self.link_menu.dismiss(),
+                    (
+                        self.clear_yes()
+                        if self.link_menu_caller == self.ids.yesLinkMenuButton
+                        else (
+                            self.clear_no()
+                            if self.link_menu_caller == self.ids.noLinkMenuButton
+                            else None
+                        )
+                    ),
+                ),
             }
         ]
+        with database.session_manager():
+            for symptom in list(
+                filter(
+                    lambda s: (
+                        s.id != self.id
+                        and ((s.id != self.yes.id) if self.yes else True)
+                        and ((s.id != self.no.id) if self.no else True)
+                    ),
+                    database.select_symptoms(name=filter_string),
+                )
+            ):
+                self.link_menu.items.append(
+                    {
+                        "text": symptom.name,
+                        "on_release": lambda s=symptom: (
+                            self.link_menu.dismiss(),
+                            (
+                                self.set_yes(s)
+                                if self.link_menu_caller == self.ids.yesLinkMenuButton
+                                else (
+                                    self.set_no(s)
+                                    if self.link_menu_caller
+                                    == self.ids.noLinkMenuButton
+                                    else None
+                                )
+                            ),
+                        ),
+                    }
+                )
+        self.link_menu.set_menu_properties()
 
-        database.session_open()
+    def init_link_menu(self, caller):
 
-        for symptom in list(
-            filter(lambda x: x.id != self.symptom_id, database.select_symptoms())
-        ):
-            res.append(
-                {
-                    "text": symptom.name,
-                    "on_release": lambda x=symptom: self.yes_select_callback(x),
-                }
-            )
+        self.link_menu = MDDropdownMenu(caller=caller, header_cls=MDBoxLayout())
 
-        database.session_close()
+        self.link_menu_caller = caller
 
-        return res
+        self.set_link_menu_items()
 
-    def clear_yes_symptom(self):
-        self.yes_menu.dismiss()
-        self.symptom_yes_name = "Выбрать"
-        self.symptom_yes = None
+        if len(self.link_menu.items) > 4:
+            if self.link_menu.header_cls.__class__.__name__ != "LinksMenuHeader":
+                self.link_menu.header_cls = LinksMenuHeader()
+        else:
+            self.link_menu.header_cls = MDBoxLayout()
 
-    def symptoms_no_menu_gen(self):
-        res = [
-            {
-                "viewclass": "IconListItem",
-                "icon": "broom",
-                "text": "Очистить",
-                "on_release": self.clear_no_symptom,
-            }
-        ]
+        if self.link_menu.header_cls.__class__.__name__ == "LinksMenuHeader":
+            if len(self.link_menu.header_cls.ids) > 0:
+                self.link_menu.header_cls.ids.searchField.focus = True
+                self.link_menu.header_cls.ids.searchField.text = ""
+            else:
+                self.link_menu.dismiss()
 
-        database.session_open()
-
-        for symptom in list(
-            filter(lambda x: x.id != self.symptom_id, database.select_symptoms())
-        ):
-            res.append(
-                {
-                    "text": symptom.name,
-                    "on_release": lambda x=symptom: self.no_menu_callback(x),
-                }
-            )
-
-        database.session_close()
-
-        return res
-
-    def clear_no_symptom(self):
-        self.no_menu.dismiss()
-        self.symptom_no_name = "Выбрать"
-        self.symptom_no = None
-
-    def on_enter(self):
-        self.yes_menu_items = self.symptoms_yes_menu_gen()
-        self.no_menu_items = self.symptoms_no_menu_gen()
-
-        self.yes_menu = MDDropdownMenu(
-            caller=self.ids.yesButton, header_cls=MDBoxLayout()
-        )
-
-        self.no_menu = MDDropdownMenu(
-            caller=self.ids.noButton, header_cls=MDBoxLayout()
-        )
+        self.link_menu.open()
 
     def menu_set_header(self, menu):
         if len(menu.items) > 4:
-            if menu.header_cls.__class__.__name__ != "YesNoMenuHeader":
-                menu.header_cls = YesNoMenuHeader()
+            if menu.header_cls.__class__.__name__ != "LinksMenuHeader":
+                menu.header_cls = LinksMenuHeader()
         else:
             menu.header_cls = MDBoxLayout()
-
-    def prepare_menu_yes(self):
-        self.yes_menu.items = list(
-            filter(
-                lambda x: x.get("text")
-                not in (self.symptom_yes_name, self.symptom_no_name),
-                self.yes_menu_items.copy(),
-            )
-        )
-
-        self.yes_menu.set_menu_properties()
-        self.menu_set_header(self.yes_menu)
-        self.set_focus_yes()
-
-    def prepare_menu_no(self):
-
-        self.no_menu.items = list(
-            filter(
-                lambda x: x.get("text")
-                not in (self.symptom_yes_name, self.symptom_no_name),
-                self.no_menu_items.copy(),
-            )
-        )
-
-        self.no_menu.set_menu_properties()
-        self.menu_set_header(self.no_menu)
-        self.set_focus_no()
-
-    def set_focus_yes(self):
-        if self.yes_menu.header_cls.__class__.__name__ == "YesNoMenuHeader":
-            if len(self.yes_menu.header_cls.ids) > 0:
-                self.yes_menu.header_cls.ids.searchField.focus = True
-                self.yes_menu.header_cls.ids.searchField.text = ""
-            else:
-                self.yes_menu.dismiss()
-
-    def set_focus_no(self):
-        if self.no_menu.header_cls.__class__.__name__ == "YesNoMenuHeader":
-            if len(self.no_menu.header_cls.ids) > 0:
-                self.no_menu.header_cls.ids.searchField.focus = True
-                self.no_menu.header_cls.ids.searchField.text = ""
-            else:
-                self.no_menu.dismiss()
-
-    def yes_select_callback(self, x):
-
-        self.yes_menu.dismiss()
-        self.symptom_yes_name = x.name
-        self.symptom_yes = x
-
-    def no_menu_callback(self, x):
-        self.no_menu.dismiss()
-        self.symptom_no_name = x.name
-        self.symptom_no = x
 
     def keywords_enter(self, text):
         def find_common(list1, list2):
@@ -446,7 +393,6 @@ class SymptomAddEditScreen(Screen):
                 if item in list2:
                     res += 1
             return res
-            # return sum(map(lambda x: x in list1 and x in list2, list1))
 
         if len(text) > 0:
             parsed_list = list(
@@ -458,7 +404,7 @@ class SymptomAddEditScreen(Screen):
                 parsed_list.remove(",")
             common = find_common(parsed_list, self.all_keywords)
             self.ids.keywordsInput.helper_text = f"В базе есть {common} введенных слов, {len(parsed_list) - common} будет добавлено"
-            self.symptom_keywords = parsed_list
+            self.keywords = parsed_list
         else:
             self.ids.keywordsInput.helper_text = (
                 "Вводите через запятую (Можно с пробелами)"
