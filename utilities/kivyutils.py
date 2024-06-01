@@ -19,7 +19,7 @@ class CustomSnackbar(MDSnackbar):
     font_size = NumericProperty("15sp")
 
 
-class AddEditKeywordDialog_Content(MDBoxLayout):
+class EditDialog_Content(MDBoxLayout):
     pass
 
 

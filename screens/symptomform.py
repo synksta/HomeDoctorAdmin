@@ -5,10 +5,13 @@ from kivymd.uix.screen import Screen
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.button import MDFlatButton
+from kivymd.uix.button import MDRaisedButton
 from kivymd.uix.dialog import MDDialog
+
 from kivy.properties import ObjectProperty
 
 from utilities import database
+from utilities.kivyutils import *
 
 from voicerecognition import recorder, speechtotext, parser
 
@@ -193,11 +196,44 @@ class SymptomAddEditScreen(Screen):
             self.dialog.open()
             return False
 
-    def dialog_dismiss(self, obj):
+    def dialog_dismiss(self, obj=None):
         self.dialog.dismiss()
         self.dialog = None
 
     ready_to_record_audio = None
+
+    def dialog_edit_voice_input(self, text):
+        if self.dialog:
+            self.dialog.dismiss()
+            self.dialog = None
+        if not self.dialog:
+            self.dialog = MDDialog(
+                title="Правка голосового ввода",
+                type="custom",
+                content_cls=EditDialog_Content(),
+                buttons=[
+                    MDFlatButton(text="ОТМЕНИТЬ", on_release=self.dialog_dismiss),
+                    MDRaisedButton(
+                        text="ПОДТВЕРДИТЬ",
+                        on_release=lambda x: apply_handle(),
+                    ),
+                ],
+            )
+
+            text_word_list, trigger_phrases = parser.parse_symptom_data(text)
+            self.dialog.content_cls.ids.wordField.text = " ".join(text_word_list)
+
+        def apply_handle():
+            symptom_data = parser.convert_symptop_data_to_dict(
+                re.sub(
+                    r"\n", "", self.dialog.content_cls.ids.wordField.text.strip()
+                ).split(),
+                trigger_phrases,
+            )
+            self.apply_voice_input(symptom_data=symptom_data)
+            self.dialog_dismiss()
+
+        self.dialog.open()
 
     def voice_input(self):
 
@@ -219,64 +255,61 @@ class SymptomAddEditScreen(Screen):
                 print(text)
                 if not text:
                     return
+                self.dialog_edit_voice_input(text=text)
+                # вызвать форму редактирования строки введенной
+                # из нее вызвать apply
 
-                symptom_data = parser.parse_symptom_data(text)
-                if not symptom_data:
-                    return
+    def apply_voice_input(self, symptom_data):
+        if not symptom_data:
+            return
 
-                print(symptom_data)
+        print(symptom_data)
 
-                self.f_name = (
-                    f"{symptom_data['name'].capitalize()}"
-                    if symptom_data["name"]
-                    else self.f_name
-                )
+        self.f_name = (
+            f"{symptom_data['name'].capitalize()}"
+            if symptom_data["name"]
+            else self.f_name
+        )
 
-                self.f_page = (
-                    f"{symptom_data['page']}" if symptom_data["page"] else self.f_page
-                )
+        self.f_page = f"{symptom_data['page']}" if symptom_data["page"] else self.f_page
 
-                self.f_description = (
-                    f"{symptom_data['description'].capitalize()}"
-                    if symptom_data["description"]
-                    else self.f_description
-                )
+        self.f_description = (
+            f"{symptom_data['description'].capitalize()}"
+            if symptom_data["description"]
+            else self.f_description
+        )
 
-                if symptom_data["yes_name"]:
-                    with database.session_manager():
-                        potential_yes = database.select_symptoms(
-                            name=symptom_data["yes_name"]
-                        )
-                        symptom = potential_yes[0] if potential_yes else None
-                    if (
-                        symptom
-                        and ((symptom.id != self.symptom.id) if self.symptom else True)
-                        and ((symptom.id != self.yes.id) if self.yes else True)
-                        and ((symptom.id != self.no.id) if self.no else True)
-                    ):
-                        self.yes = symptom
-                        self.f_yes_name = symptom.name
+        if symptom_data["yes_name"]:
+            with database.session_manager():
+                potential_yes = database.select_symptoms(name=symptom_data["yes_name"])
+                symptom = potential_yes[0] if potential_yes else None
+            if (
+                symptom
+                and ((symptom.id != self.symptom.id) if self.symptom else True)
+                and ((symptom.id != self.yes.id) if self.yes else True)
+                and ((symptom.id != self.no.id) if self.no else True)
+            ):
+                self.yes = symptom
+                self.f_yes_name = symptom.name
 
-                if symptom_data["no_name"]:
-                    with database.session_manager():
-                        potential_no = database.select_symptoms(
-                            name=symptom_data["no_name"]
-                        )
-                        symptom = potential_no[0] if potential_no else None
-                    if (
-                        symptom
-                        and ((symptom.id != self.symptom.id) if self.symptom else True)
-                        and ((symptom.id != self.yes.id) if self.yes else True)
-                        and ((symptom.id != self.no.id) if self.no else True)
-                    ):
-                        self.no = symptom
-                        self.f_no_name = symptom.name
+        if symptom_data["no_name"]:
+            with database.session_manager():
+                potential_no = database.select_symptoms(name=symptom_data["no_name"])
+                symptom = potential_no[0] if potential_no else None
+            if (
+                symptom
+                and ((symptom.id != self.symptom.id) if self.symptom else True)
+                and ((symptom.id != self.yes.id) if self.yes else True)
+                and ((symptom.id != self.no.id) if self.no else True)
+            ):
+                self.no = symptom
+                self.f_no_name = symptom.name
 
-                self.f_keywords = (
-                    f"{symptom_data['keywords']}"
-                    if symptom_data["keywords"]
-                    else self.f_keywords
-                )
+        self.f_keywords = (
+            f"{symptom_data['keywords']}"
+            if symptom_data["keywords"]
+            else self.f_keywords
+        )
 
     def save_then_quit(self):
         if self.save():

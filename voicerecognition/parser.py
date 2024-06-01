@@ -16,6 +16,8 @@ digits = [
     "девять",  # nine
 ]
 
+# A marker used to define attribute as ready for fill
+marker = "@"
 
 # This line is a lambda function that takes a dictionary and a value as arguments and returns the key of the dictionary that corresponds to the given value.
 # It does this by creating a list of keys whose values are equal to the given value and then returning the first element of that list.
@@ -37,9 +39,6 @@ def parse_symptom_data(text):
 
     root_dir = "./voicerecognition/"
     trigger_phrases_file_name = "symptom_attributes_trigger_phrases.json"
-
-    # A marker used to define attribute as ready for fill
-    marker = "@"
 
     # Attributes and their trigger phrases
     trigger_phrases = {
@@ -113,7 +112,10 @@ def parse_symptom_data(text):
     # Filter out the empty strings from the text word list
     text_word_list = list(filter(lambda word: len(word) > 0, text_word_list))
     print(text_word_list)
+    return text_word_list, trigger_phrases
 
+
+def convert_symptop_data_to_dict(text_word_list, trigger_phrases):
     # Initialize the current attribute
     current_attribute = ""
     # Iterate over the text words

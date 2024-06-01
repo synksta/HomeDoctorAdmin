@@ -2,7 +2,7 @@
 
 Manager:
     # LoginScreen:
-    # MenuScreen:
+    MenuScreen:
     SymptomsScreen:
     SymptomAddEditScreen:
     KeywordsScreen:
@@ -302,7 +302,7 @@ Manager:
                 helper_text_mode: "on_focus"
                 on_text: root.keywords_enter(self.text)
 
-<AddEditKeywordDialog_Content>
+<EditDialog_Content>
     orientation: "vertical"
     spacing: "12dp"
     size_hint_y: None
@@ -311,6 +311,9 @@ Manager:
 
     MDTextField:
         id: wordField
+        size_hint_x: 0.7
+        size_hint: 1, 1
+        multiline: True
         hint_text: "Слово"
 
 <KeywordsScreen>:

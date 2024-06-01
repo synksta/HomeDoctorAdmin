@@ -45,7 +45,7 @@ class KeywordsScreen(Screen):
             self.dialog = MDDialog(
                 title="Добавление ключевого слова",
                 type="custom",
-                content_cls=AddEditKeywordDialog_Content(),
+                content_cls=EditDialog_Content(),
                 buttons=[
                     MDFlatButton(text="ОТМЕНИТЬ", on_release=self.dialog_dismiss),
                     MDRaisedButton(text="ДОБАВИТЬ", on_release=self.add_keyword),
@@ -84,7 +84,7 @@ class KeywordsScreen(Screen):
             self.dialog = None
         if not self.dialog and id:
             with database.session_manager():
-                word = database.get_keyword_by_id(id).word
+                word = database.select_keyword(id=id).word
             self.dialog = MDDialog(
                 title=f'Выбрано слово "{word}"',
                 text=f"Выберите действие",
@@ -111,7 +111,7 @@ class KeywordsScreen(Screen):
             self.dialog = MDDialog(
                 title="Изменение ключевого слова",
                 type="custom",
-                content_cls=AddEditKeywordDialog_Content(),
+                content_cls=EditDialog_Content(),
                 buttons=[
                     MDFlatButton(text="ОТМЕНИТЬ", on_release=self.dialog_dismiss),
                     MDRaisedButton(
@@ -189,6 +189,8 @@ class KeywordsScreen(Screen):
         with database.session_manager():
             for keyword in database.select_keywords():
                 self.new_row_data.append(keyword.tuple())
+
+        print(self.new_row_data)
 
         if self.wordsTable == None:
             self.wordsTable = MDDataTable(

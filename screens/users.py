@@ -117,7 +117,7 @@ class UsersScreen(Screen):
             self.dialog = MDDialog(
                 title="Изменение пользователя",
                 type="custom",
-                content_cls=AddEditKeywordDialog_Content(),
+                content_cls=EditDialog_Content(),
                 buttons=[
                     MDFlatButton(text="ОТМЕНИТЬ", on_release=self.dialog_dismiss),
                     MDRaisedButton(

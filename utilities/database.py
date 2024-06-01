@@ -77,7 +77,7 @@ class Keyword(Base):
     word = Column(String, nullable=False)
 
     def tuple(self):
-        return (str(x) if x is not None else "-" for x in (self.id, self.word))
+        return tuple(str(x) if x is not None else "-" for x in (self.id, self.word))
 
 
 class SymptomKeywordMapping(Base):
